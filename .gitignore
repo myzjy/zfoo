@@ -67,3 +67,4 @@ data_*/
 
 # C++ CMake
 **/cmake-build-debug/
+._*

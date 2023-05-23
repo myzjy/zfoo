@@ -15,6 +15,7 @@ package com.zfoo.net.packet.common;
 
 import com.baidu.bjf.remoting.protobuf.annotation.Ignore;
 import com.baidu.bjf.remoting.protobuf.annotation.ProtobufClass;
+import com.zfoo.net.core.gateway.IGatewayLoadBalancer;
 import com.zfoo.protocol.IPacket;
 import com.zfoo.protocol.ProtocolManager;
 import org.slf4j.helpers.FormattingTuple;
@@ -25,7 +26,7 @@ import org.slf4j.helpers.MessageFormatter;
  * @version 3.0
  */
 @ProtobufClass
-public class Error implements IPacket {
+public class Error implements IPacket, IGatewayLoadBalancer {
     @Ignore
     public static final short PROTOCOL_ID = 101;
 
@@ -101,5 +102,10 @@ public class Error implements IPacket {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    @Override
+    public Object loadBalancerConsistentHashObject() {
+        return module;
     }
 }

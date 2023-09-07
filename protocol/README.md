@@ -5,7 +5,7 @@ English | [简体中文](./README_CN.md)
 - [zfoo protocol](https://github.com/zfoo-project/zfoo/blob/main/protocol/README.md)
   It is currently the fastest framework for binary serialization and deserialization in Java, and has the fewest
   serialization bytes
-- The protocol is currently natively supported **C++ Java Javascript C# Go Lua GDScript**，It's easy to do cross-platform
+- The protocol is currently natively supported **C++ Java Javascript C# Go Lua GDScript Pythont**，It's easy to do cross-platform
 - The protocol can customize the private protocol format to make your protocol more secure, and supports adding fields
   and being compatible with previous and subsequent protocols
 - Compatible with Protobuf, it supports the generation of Protobuf protocol files, and provides a generation method from
@@ -154,26 +154,8 @@ your protocol number a little more compactly, so that your protocol number will 
       }
       ```
 
-    - The second uses static constants + interfaces: the value of this protocol number must be the same as the value
-      returned by the IPacket interface, which can slightly improve performance
-      ```
-      public class SimpleObject implements IPacket {
-      
-          public static final short PROTOCOL_ID = 104;
-      
-          public int c;
-      
-          public boolean g;
-      
-          @Override
-          public short protocolId() {
-              return PROTOCOL_ID;
-          }
-      
-      }
-      ```
 
-    - The third use: Register the agreement through Protocol Manager.initProtocolAuto() without writing the protocol
+    - The second use: Register the agreement through Protocol Manager.initProtocolAuto() without writing the protocol
       number
       ```
       public class SimpleObject implements IPacket {

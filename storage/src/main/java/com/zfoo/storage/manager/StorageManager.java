@@ -16,23 +16,22 @@ package com.zfoo.storage.manager;
 import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.exception.ExceptionUtils;
 import com.zfoo.protocol.exception.RunException;
-import com.zfoo.protocol.util.ClassUtils;
-import com.zfoo.protocol.util.FileUtils;
-import com.zfoo.protocol.util.ReflectionUtils;
-import com.zfoo.protocol.util.StringUtils;
+import com.zfoo.protocol.util.*;
 import com.zfoo.storage.StorageContext;
-import com.zfoo.storage.model.anno.Id;
-import com.zfoo.storage.model.anno.ResInjection;
-import com.zfoo.storage.model.config.StorageConfig;
-import com.zfoo.storage.model.resource.ResourceEnum;
-import com.zfoo.storage.model.vo.ResourceDef;
-import com.zfoo.storage.model.vo.Storage;
+import com.zfoo.storage.anno.GraalvmNativeStorage;
+import com.zfoo.storage.anno.Id;
+import com.zfoo.storage.anno.Storage;
+import com.zfoo.storage.anno.StorageAutowired;
+import com.zfoo.storage.config.StorageConfig;
+import com.zfoo.storage.interpreter.data.StorageEnum;
+import com.zfoo.storage.model.IStorage;
+import com.zfoo.storage.model.StorageDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.type.ClassMetadata;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.stereotype.Component;
@@ -68,7 +67,7 @@ public class StorageManager implements IStorageManager {
     /**
      * 在当前项目被依赖注入，被使用的Storage
      */
-    private final Map<Class<?>, Storage<?, ?>> storageMap = new HashMap<>();
+    private final Map<Class<?>, IStorage<?, ?>> storageMap = new HashMap<>();
 
     public StorageConfig getStorageConfig() {
         return storageConfig;
@@ -80,28 +79,24 @@ public class StorageManager implements IStorageManager {
 
     @Override
     public void initBefore() {
-        var resourceDefinitionMap = new HashMap<Class<?>, ResourceDef>();
+        var resourceDefinitionMap = new HashMap<Class<?>, StorageDefinition>();
 
-        // 扫描Excel的class类文件
-        var clazzNameSet = scanResourceAnno(StringUtils.tokenize(storageConfig.getScanPackage(), ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS));
+        // 获取需要被映射的Excel的class类文件
+        var clazzSet = resourceClass();
+        if (CollectionUtils.isEmpty(clazzSet)) {
+            logger.warn("no any storages found, please check your config. If is in graalvm environment, make sure your storage be annotated with @GraalvmNativeStorage and can be scanned by spring @Component.");
+            return;
+        }
 
         // 通过class类文件扫描excel文件地址
-        for (var clazzName : clazzNameSet) {
-            Class<?> resourceClazz;
-            try {
-                resourceClazz = Class.forName(clazzName);
-            } catch (ClassNotFoundException e) {
-                // 无法获取资源类
-                throw new RuntimeException(StringUtils.format("Unable to get resource [class:{}]", clazzName));
-            }
-
-            var resourceFile = scanResourceFile(resourceClazz);
-            ResourceDef resourceDef = new ResourceDef(resourceClazz, resourceFile);
+        for (var resourceClazz : clazzSet) {
+            var resourceFile = resource(resourceClazz);
+            StorageDefinition storageDefinition = new StorageDefinition(resourceClazz, resourceFile);
             if (resourceDefinitionMap.containsKey(resourceClazz)) {
                 // 类的资源定义已经存在
-                throw new RuntimeException(StringUtils.format("The resource definition of the class [{}] already exists [{}]", resourceClazz, resourceDef));
+                throw new RuntimeException(StringUtils.format("The resource definition of the class [{}] already exists [{}]", resourceClazz, storageDefinition));
             }
-            resourceDefinitionMap.put(resourceClazz, resourceDef);
+            resourceDefinitionMap.put(resourceClazz, storageDefinition);
         }
 
         // 检查class字段是否合法
@@ -135,7 +130,7 @@ public class StorageManager implements IStorageManager {
                 var clazz = definition.getClazz();
                 var resource = definition.getResource();
                 var fileExtName = FileUtils.fileExtName(resource.getFilename());
-                Storage<?, ?> storage = Storage.parse(resource.getInputStream(), clazz, fileExtName);
+                var storage = StorageObject.parse(resource.getInputStream(), clazz, fileExtName);
                 storageMap.putIfAbsent(clazz, storage);
             }
         } catch (Exception e) {
@@ -148,7 +143,8 @@ public class StorageManager implements IStorageManager {
         var applicationContext = StorageContext.getApplicationContext();
         var componentBeans = applicationContext.getBeansWithAnnotation(Component.class);
         for (var bean : componentBeans.values()) {
-            ReflectionUtils.filterFieldsInClass(bean.getClass(), field -> field.isAnnotationPresent(ResInjection.class), field -> {
+            var clazz = bean.getClass();
+            ReflectionUtils.filterFieldsInClass(clazz, field -> field.isAnnotationPresent(StorageAutowired.class), field -> {
                 Type type = field.getGenericType();
 
                 if (!(type instanceof ParameterizedType)) {
@@ -163,7 +159,7 @@ public class StorageManager implements IStorageManager {
 
                 Class<?> resourceClazz = (Class<?>) types[1];
 
-                Storage<?, ?> storage = storageMap.get(resourceClazz);
+                IStorage<?, ?> storage = storageMap.get(resourceClazz);
 
                 if (storage == null) {
                     throw new RuntimeException(StringUtils.format("Static class [resource:{}] does not exist", resourceClazz.getSimpleName()));
@@ -196,7 +192,7 @@ public class StorageManager implements IStorageManager {
     }
 
     @Override
-    public Storage<?, ?> getStorage(Class<?> clazz) {
+    public IStorage<?, ?> getStorage(Class<?> clazz) {
         var storage = storageMap.get(clazz);
         if (storage == null) {
             throw new RunException("There is no [{}] defined Storage and unable to get it", clazz.getCanonicalName());
@@ -209,12 +205,12 @@ public class StorageManager implements IStorageManager {
     }
 
     @Override
-    public Map<Class<?>, Storage<?, ?>> storageMap() {
+    public Map<Class<?>, IStorage<?, ?>> storageMap() {
         return storageMap;
     }
 
     @Override
-    public void updateStorage(Class<?> clazz, Storage<?, ?> storage) {
+    public void updateStorage(Class<?> clazz, IStorage<?, ?> storage) {
         storageMap.put(clazz, storage);
     }
 
@@ -223,46 +219,62 @@ public class StorageManager implements IStorageManager {
         return getStorageConfig();
     }
 
-    private Set<String> scanResourceAnno(String[] scanPackages) {
-        var resourcePatternResolver = new PathMatchingResourcePatternResolver();
-        var metadataReaderFactory = new CachingMetadataReaderFactory(resourcePatternResolver);
+    private Set<Class<?>> resourceClass() {
+        // graalvm环境 PathMatchingResourcePatternResolver/CachingMetadataReaderFactory 无法使用，所以直接在spring容器中获取
+        if (GraalVmUtils.isGraalVM()) {
+            var applicationContext = StorageContext.getApplicationContext();
+            var nativeResources = applicationContext.getBeansWithAnnotation(GraalvmNativeStorage.class);
+            return nativeResources.values().stream().map(it -> it.getClass()).collect(Collectors.toSet());
+        } else {
+            return scanResourceAnno();
+        }
+    }
 
+    private Set<Class<?>> scanResourceAnno() {
+        var scanPackages = StringUtils.tokenize(storageConfig.getScanPackage(), ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+        var result = new HashSet<Class<?>>();
         try {
-            var result = new HashSet<String>();
+            var resourcePatternResolver = new PathMatchingResourcePatternResolver();
+            var metadataReaderFactory = new CachingMetadataReaderFactory(resourcePatternResolver);
             for (var scanPackage : scanPackages) {
                 var packageSearchPath = "classpath*:" + scanPackage.replace(StringUtils.PERIOD, StringUtils.SLASH) + StringUtils.SLASH + SUFFIX_PATTERN;
                 var resources = resourcePatternResolver.getResources(packageSearchPath);
-                var resourceName = com.zfoo.storage.model.anno.Resource.class.getName();
+                var resourceName = Storage.class.getName();
                 for (var resource : resources) {
                     if (resource.isReadable()) {
                         var metadataReader = metadataReaderFactory.getMetadataReader(resource);
                         var annoMeta = metadataReader.getAnnotationMetadata();
                         if (annoMeta.hasAnnotation(resourceName)) {
                             ClassMetadata clazzMeta = metadataReader.getClassMetadata();
-                            result.add(clazzMeta.getClassName());
+                            Class<?> resourceClazz = Class.forName(clazzMeta.getClassName());
+                            result.add(resourceClazz);
                         }
                     }
                 }
             }
             return result;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Unable to read resource information", e);
+        }
+    }
+
+    private Resource resource(Class<?> clazz) {
+        if (GraalVmUtils.isGraalVM()) {
+            var resourceLoader = new DefaultResourceLoader();
+            var resource = resourceLoader.getResource(clazz.getAnnotation(GraalvmNativeStorage.class).value());
+            return resource;
+        } else {
+            return scanResourceFile(clazz);
         }
     }
 
     private Resource scanResourceFile(Class<?> clazz) {
         var resourcePatternResolver = new PathMatchingResourcePatternResolver();
         var metadataReaderFactory = new CachingMetadataReaderFactory(resourcePatternResolver);
-        String fileName;
-        if (clazz.getAnnotation(com.zfoo.storage.model.anno.Resource.class).value().equals("")
-                && clazz.getAnnotation(com.zfoo.storage.model.anno.Resource.class).alias().equals("")) {
-            fileName = clazz.getSimpleName();
-        } else {
-            if (clazz.getAnnotation(com.zfoo.storage.model.anno.Resource.class).value().equals(""))
-                fileName = clazz.getAnnotation(com.zfoo.storage.model.anno.Resource.class).alias();
-            else
-                fileName = clazz.getAnnotation(com.zfoo.storage.model.anno.Resource.class).value();
-        }
+
+        var alias = clazz.getAnnotation(Storage.class).value();
+        var fileName = StringUtils.isEmpty(alias) ? clazz.getSimpleName() : alias;
+
         try {
             // 一个class类只能匹配一个资源文件，如果匹配多个则会有歧义
             var resourceSet = new HashSet<Resource>();
@@ -272,7 +284,7 @@ public class StorageManager implements IStorageManager {
                 var packageSearchPath = StringUtils.format("{}/**/{}.*", resourceLocation, fileName);
                 packageSearchPath = packageSearchPath.replaceAll("//", "/");
                 try {
-                    Arrays.stream(resourcePatternResolver.getResources(packageSearchPath)).filter(it -> ResourceEnum.containsResourceEnum(FileUtils.fileExtName(it.getFilename()))).forEach(it -> resources.add(it));
+                    Arrays.stream(resourcePatternResolver.getResources(packageSearchPath)).filter(it -> StorageEnum.containsResourceEnum(FileUtils.fileExtName(it.getFilename()))).forEach(it -> resources.add(it));
                 } catch (Exception e) {
                     // do nothing
                 }
@@ -281,7 +293,7 @@ public class StorageManager implements IStorageManager {
                 if (resources.isEmpty()) {
                     packageSearchPath = StringUtils.format("{}/{}.*", resourceLocation, fileName);
                     packageSearchPath = packageSearchPath.replaceAll("//", "/");
-                    Arrays.stream(resourcePatternResolver.getResources(packageSearchPath)).filter(it -> ResourceEnum.containsResourceEnum(FileUtils.fileExtName(it.getFilename()))).forEach(it -> resources.add(it));
+                    Arrays.stream(resourcePatternResolver.getResources(packageSearchPath)).filter(it -> StorageEnum.containsResourceEnum(FileUtils.fileExtName(it.getFilename()))).forEach(it -> resources.add(it));
                 }
                 resourceSet.addAll(resources);
             }

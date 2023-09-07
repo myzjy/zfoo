@@ -13,11 +13,11 @@
 
 package com.zfoo.net.packet.common;
 
-import com.baidu.bjf.remoting.protobuf.annotation.Ignore;
+import com.baidu.bjf.remoting.protobuf.annotation.Protobuf;
 import com.baidu.bjf.remoting.protobuf.annotation.ProtobufClass;
-import com.zfoo.net.core.gateway.IGatewayLoadBalancer;
-import com.zfoo.protocol.IPacket;
+import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.ProtocolManager;
+import com.zfoo.protocol.anno.Protocol;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -26,24 +26,15 @@ import org.slf4j.helpers.MessageFormatter;
  * @version 3.0
  */
 @ProtobufClass
-public class Error implements IPacket, IGatewayLoadBalancer {
-    @Ignore
-    public static final short PROTOCOL_ID = 101;
+@Protocol(id = 101)
+public class Error implements IPacket {
 
+    @Protobuf(order = 1)
     private int module;
-
+    @Protobuf(order = 2)
     private int errorCode;
-
+    @Protobuf(order = 3)
     private String errorMessage;
-
-    @Override
-    public short protocolId() {
-        return PROTOCOL_ID;
-    }
-
-    public static short errorProtocolId() {
-        return PROTOCOL_ID;
-    }
 
     @Override
     public String toString() {
@@ -62,7 +53,7 @@ public class Error implements IPacket, IGatewayLoadBalancer {
 
     public static Error valueOf(IPacket packet, int errorCode, String errorMessage) {
         Error response = new Error();
-        response.module = ProtocolManager.getProtocol(packet.protocolId()).module();
+        response.module = ProtocolManager.getProtocol(packet.getClass()).module();
         response.errorCode = errorCode;
         response.errorMessage = errorMessage;
         return response;
@@ -102,10 +93,5 @@ public class Error implements IPacket, IGatewayLoadBalancer {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
-    }
-
-    @Override
-    public Object loadBalancerConsistentHashObject() {
-        return module;
     }
 }

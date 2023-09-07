@@ -20,6 +20,7 @@ import com.zfoo.net.core.gateway.model.AuthUidToGatewayCheck;
 import com.zfoo.net.core.gateway.model.AuthUidToGatewayConfirm;
 import com.zfoo.net.core.gateway.model.AuthUidToGatewayEvent;
 import com.zfoo.net.packet.EncodedPacketInfo;
+import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.packet.common.Error;
 import com.zfoo.net.packet.common.Heartbeat;
 import com.zfoo.net.router.answer.AsyncAnswer;
@@ -35,7 +36,6 @@ import com.zfoo.net.router.route.SignalBridge;
 import com.zfoo.net.session.Session;
 import com.zfoo.net.task.PacketReceiverTask;
 import com.zfoo.net.task.TaskBus;
-import com.zfoo.protocol.IPacket;
 import com.zfoo.protocol.exception.ExceptionUtils;
 import com.zfoo.protocol.util.JsonUtils;
 import com.zfoo.protocol.util.StringUtils;
@@ -71,7 +71,7 @@ public class Router implements IRouter {
      */
     @Override
     public void receive(Session session, IPacket packet, @Nullable IAttachment attachment) {
-        if (packet.protocolId() == Heartbeat.PROTOCOL_ID) {
+        if (packet.getClass() == Heartbeat.class) {
             logger.info("heartbeat");
             return;
         }
@@ -116,7 +116,7 @@ public class Router implements IRouter {
 
                             // 网关授权，授权完成直接返回
                             // 注意：这个 AuthUidToGatewayCheck 是在home的LoginController中处理完登录后，把消息发给网关进行授权
-                            if (AuthUidToGatewayCheck.getAuthProtocolId() == packet.protocolId()) {
+                            if (AuthUidToGatewayCheck.class == packet.getClass()) {
                                 var uid = ((AuthUidToGatewayCheck) packet).getUid();
                                 if (uid <= 0) {
                                     logger.error("错误的网关授权信息，uid必须大于0");
@@ -160,7 +160,8 @@ public class Router implements IRouter {
 
         var channel = session.getChannel();
         if (!channel.isActive() || !channel.isWritable()) {
-            logger.warn("send msg error, protocolId=[{}] isActive=[{}] isWritable=[{}]", packet.protocolId(), channel.isActive(), channel.isWritable());
+            logger.warn("send msg error, protocol [{}] isActive=[{}] isWritable=[{}]"
+                    , packet.getClass().getSimpleName(), channel.isActive(), channel.isWritable());
         }
         channel.writeAndFlush(packetInfo);
     }
@@ -187,7 +188,7 @@ public class Router implements IRouter {
 
             IPacket responsePacket = clientSignalAttachment.getResponseFuture().get(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
 
-            if (responsePacket.protocolId() == Error.errorProtocolId()) {
+            if (responsePacket.getClass() == Error.class) {
                 throw new ErrorResponseException((Error) responsePacket);
             }
             if (answerClass != null && answerClass != responsePacket.getClass()) {
@@ -229,7 +230,7 @@ public class Router implements IRouter {
                             throw new NetTimeOutException("async ask [{}] timeout exception", packet.getClass().getSimpleName());
                         }
 
-                        if (answer.protocolId() == Error.errorProtocolId()) {
+                        if (answer.getClass() == Error.class) {
                             throw new ErrorResponseException((Error) answer);
                         }
 

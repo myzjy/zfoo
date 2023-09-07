@@ -13,6 +13,7 @@
 
 package com.zfoo.protocol.serializer.go;
 
+import com.zfoo.protocol.anno.Compatible;
 import com.zfoo.protocol.collection.ArrayUtils;
 import com.zfoo.protocol.generate.GenerateOperation;
 import com.zfoo.protocol.generate.GenerateProtocolFile;
@@ -20,15 +21,16 @@ import com.zfoo.protocol.generate.GenerateProtocolNote;
 import com.zfoo.protocol.generate.GenerateProtocolPath;
 import com.zfoo.protocol.registration.IProtocolRegistration;
 import com.zfoo.protocol.registration.ProtocolRegistration;
-import com.zfoo.protocol.registration.anno.Compatible;
 import com.zfoo.protocol.registration.field.IFieldRegistration;
 import com.zfoo.protocol.serializer.CodeLanguage;
 import com.zfoo.protocol.serializer.reflect.*;
-import com.zfoo.protocol.util.*;
+import com.zfoo.protocol.util.ClassUtils;
+import com.zfoo.protocol.util.FileUtils;
+import com.zfoo.protocol.util.ReflectionUtils;
+import com.zfoo.protocol.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +98,7 @@ public abstract class GenerateGoUtils {
                 .filter(it -> Objects.nonNull(it))
                 .forEach(it -> initProtocolBuilder.append(TAB).append(StringUtils.format("Protocols[{}] = new({})", it.protocolId(), it.protocolConstructor().getDeclaringClass().getSimpleName())).append(LS));
 
-        var protocolManagerTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("go/ProtocolManagerTemplate.go")));
+        var protocolManagerTemplate = ClassUtils.getFileFromClassPathToString("go/ProtocolManagerTemplate.go");
         protocolManagerTemplate = StringUtils.format(protocolManagerTemplate, initProtocolBuilder.toString().trim());
         FileUtils.writeStringToFile(new File(StringUtils.format("{}/{}", protocolOutputRootPath, "ProtocolManager.go")), protocolManagerTemplate, true);
     }
@@ -109,8 +111,8 @@ public abstract class GenerateGoUtils {
         var protocolClazzName = registrationConstructor.getDeclaringClass().getSimpleName();
 
         var protocolTemplate = ArrayUtils.isEmpty(registration.getFields())
-                ? StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("go/ProtocolTemplateEmpty.go")))
-                : StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("go/ProtocolTemplate.go")));
+                ? ClassUtils.getFileFromClassPathToString("go/ProtocolTemplateEmpty.go")
+                : ClassUtils.getFileFromClassPathToString("go/ProtocolTemplate.go");
 
         var classNote = GenerateProtocolNote.classNote(protocolId, CodeLanguage.Go);
         var fieldDefinition = fieldDefinition(registration);
@@ -200,7 +202,7 @@ public abstract class GenerateGoUtils {
 
     public static String toGoClassName(String typeName) {
         typeName = typeName.replaceAll("java.util.|java.lang.", StringUtils.EMPTY);
-        typeName = typeName.replaceAll("com\\.[a-zA-Z0-9_.]*\\.", StringUtils.EMPTY);
+        typeName = typeName.replaceAll("[a-zA-Z0-9_.]*\\.", StringUtils.EMPTY);
 
         // CSharp不适用基础类型的泛型，会影响性能
         switch (typeName) {

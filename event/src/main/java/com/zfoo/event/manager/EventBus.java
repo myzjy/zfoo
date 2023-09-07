@@ -12,15 +12,14 @@
  */
 package com.zfoo.event.manager;
 
-import com.zfoo.event.model.event.IEvent;
-import com.zfoo.event.model.vo.IEventReceiver;
+import com.zfoo.event.enhance.IEventReceiver;
+import com.zfoo.event.model.IEvent;
 import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.collection.concurrent.CopyOnWriteHashMapLongObject;
 import com.zfoo.protocol.util.AssertionUtils;
+import com.zfoo.protocol.util.RandomUtils;
 import com.zfoo.protocol.util.StringUtils;
-import com.zfoo.util.SafeRunnable;
-import com.zfoo.util.ThreadUtils;
-import com.zfoo.util.math.RandomUtils;
+import com.zfoo.protocol.util.ThreadUtils;
 import io.netty.util.concurrent.FastThreadLocalThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +70,7 @@ public abstract class EventBus {
         private final ThreadGroup group;
 
         public EventThreadFactory(int poolNumber) {
-            this.group = ThreadUtils.currentThreadGroup();
+            this.group = Thread.currentThread().getThreadGroup();
             this.poolNumber = poolNumber;
         }
 
@@ -135,7 +134,7 @@ public abstract class EventBus {
      * Use the event thread specified by the hashcode to execute the task
      */
     public static void execute(int executorHash, Runnable runnable) {
-        executors[Math.abs(executorHash % EXECUTORS_SIZE)].execute(SafeRunnable.valueOf(runnable));
+        executors[Math.abs(executorHash % EXECUTORS_SIZE)].execute(ThreadUtils.safeRunnable(runnable));
     }
 
     /**

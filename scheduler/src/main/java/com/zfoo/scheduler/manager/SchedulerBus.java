@@ -15,11 +15,10 @@ package com.zfoo.scheduler.manager;
 
 import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.util.StringUtils;
+import com.zfoo.protocol.util.ThreadUtils;
 import com.zfoo.scheduler.SchedulerContext;
-import com.zfoo.scheduler.model.vo.SchedulerDefinition;
+import com.zfoo.scheduler.enhance.SchedulerDefinition;
 import com.zfoo.scheduler.util.TimeUtils;
-import com.zfoo.util.SafeRunnable;
-import com.zfoo.util.ThreadUtils;
 import io.netty.util.concurrent.FastThreadLocalThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version 3.0
  */
 public abstract class SchedulerBus {
+
 
     private static final Logger logger = LoggerFactory.getLogger(SchedulerBus.class);
 
@@ -77,7 +77,7 @@ public abstract class SchedulerBus {
         private final ThreadGroup group;
 
         public SchedulerThreadFactory(int poolNumber) {
-            this.group = ThreadUtils.currentThreadGroup();
+            this.group = Thread.currentThread().getThreadGroup();
             this.poolNumber = poolNumber;
         }
 
@@ -165,24 +165,18 @@ public abstract class SchedulerBus {
     /**
      * 不断执行的周期循环任务
      */
-    public static void scheduleAtFixedRate(Runnable runnable, long period, TimeUnit unit) {
-        if (SchedulerContext.isStop()) {
-            return;
-        }
+    public static ScheduledFuture<?> scheduleAtFixedRate(Runnable runnable, long period, TimeUnit unit) {
 
-        executor.scheduleAtFixedRate(SafeRunnable.valueOf(runnable), 0, period, unit);
+        return executor.scheduleAtFixedRate(ThreadUtils.safeRunnable(runnable), 0, period, unit);
     }
 
 
     /**
      * 固定延迟执行的任务
      */
-    public static void schedule(Runnable runnable, long delay, TimeUnit unit) {
-        if (SchedulerContext.isStop()) {
-            return;
-        }
+    public static ScheduledFuture<?> schedule(Runnable runnable, long delay, TimeUnit unit) {
 
-        executor.schedule(SafeRunnable.valueOf(runnable), delay, unit);
+       return executor.schedule(ThreadUtils.safeRunnable(runnable), delay, unit);
     }
 
     /**
@@ -193,7 +187,7 @@ public abstract class SchedulerBus {
             return;
         }
 
-        schedulerDefList.add(SchedulerDefinition.valueOf(cron, runnable));
+        registerScheduler(SchedulerDefinition.valueOf(cron, runnable));
     }
 
     public static Executor threadExecutor(long currentThreadId) {

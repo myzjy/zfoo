@@ -30,8 +30,6 @@ import java.util.*;
  */
 public class ProtocolManager {
 
-    public static final String PROTOCOL_ID = "PROTOCOL_ID";
-    public static final String PROTOCOL_METHOD = "protocolId";
     public static final short MAX_PROTOCOL_NUM = Short.MAX_VALUE;
     public static final byte MAX_MODULE_NUM = Byte.MAX_VALUE;
 
@@ -58,8 +56,8 @@ public class ProtocolManager {
     /**
      * serialize the packet into the buffer
      */
-    public static void write(ByteBuf buffer, IPacket packet) {
-        var protocolId = packet.protocolId();
+    public static void write(ByteBuf buffer, Object packet) {
+        var protocolId = protocolId(packet.getClass());
         // write the protocolId
         ByteBufUtils.writeShort(buffer, protocolId);
         // write the package
@@ -69,16 +67,23 @@ public class ProtocolManager {
     /**
      * deserialization a packet from the buffer
      */
-    public static IPacket read(ByteBuf buffer) {
-        return (IPacket) protocols[ByteBufUtils.readShort(buffer)].read(buffer);
+    public static Object read(ByteBuf buffer) {
+        return protocols[ByteBufUtils.readShort(buffer)].read(buffer);
     }
 
     public static IProtocolRegistration getProtocol(short protocolId) {
         return protocols[protocolId];
     }
 
+    public static IProtocolRegistration getProtocol(Class<?> protocolClass) {
+        return getProtocol(protocolId(protocolClass));
+    }
+
     public static ProtocolModule moduleByProtocolId(short id) {
         return modules[protocols[id].module()];
+    }
+    public static ProtocolModule moduleByProtocol(Class<?> clazz) {
+        return moduleByProtocolId(protocolId(clazz));
     }
 
     /**
@@ -106,6 +111,10 @@ public class ProtocolManager {
 
     public static short protocolId(Class<?> clazz) {
         return protocolIdMap == null ? protocolIdPrimitiveMap.getPrimitive(clazz.hashCode()) : protocolIdMap.get(clazz);
+    }
+
+    public static boolean isProtocolClass(Class<?> clazz) {
+        return protocolIdMap == null ? protocolIdPrimitiveMap.containsKey(clazz.hashCode()) : protocolIdMap.containsKey(clazz);
     }
 
     public static void initProtocol(Set<Class<?>> protocolClassSet) {

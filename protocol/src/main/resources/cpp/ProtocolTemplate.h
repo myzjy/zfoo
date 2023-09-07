@@ -6,7 +6,7 @@
 namespace zfoo {
 
     {}
-    class {} : public IPacket {
+    class {} : public IProtocol {
     public:
         {}
 
@@ -35,7 +35,7 @@ namespace zfoo {
             return {};
         }
 
-        void write(ByteBuffer &buffer, IPacket *packet) override {
+        void write(ByteBuffer &buffer, IProtocol *packet) override {
             if (buffer.writePacketFlag(packet)) {
                 return;
             }
@@ -43,7 +43,7 @@ namespace zfoo {
             {}
         }
 
-        IPacket *read(ByteBuffer &buffer) override {
+        IProtocol *read(ByteBuffer &buffer) override {
             auto *packet = new {}();
             if (!buffer.readBool()) {
                 return packet;

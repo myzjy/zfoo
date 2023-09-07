@@ -15,8 +15,8 @@ package com.zfoo.net.consumer.balancer;
 
 import com.zfoo.net.NetContext;
 import com.zfoo.net.consumer.registry.RegisterVO;
+import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.session.Session;
-import com.zfoo.protocol.IPacket;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.registration.ProtocolModule;
 import com.zfoo.protocol.util.StringUtils;
@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * @author godotg
@@ -49,7 +48,7 @@ public abstract class AbstractConsumerLoadBalancer implements IConsumerLoadBalan
     }
 
     public List<Session> getSessionsByPacket(IPacket packet) {
-        return getSessionsByModule(ProtocolManager.moduleByProtocolId(packet.protocolId()));
+        return getSessionsByModule(ProtocolManager.moduleByProtocol(packet.getClass()));
     }
 
     public List<Session> getSessionsByModule(ProtocolModule module) {
@@ -80,7 +79,7 @@ public abstract class AbstractConsumerLoadBalancer implements IConsumerLoadBalan
             return false;
         }
 
-        var module = ProtocolManager.moduleByProtocolId(packet.protocolId());
+        var module = ProtocolManager.moduleByProtocol(packet.getClass());
         return registerVO.getProviderConfig().getProviders().contains(module);
     }
 }

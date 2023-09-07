@@ -79,6 +79,7 @@ public abstract class StringUtils {
 
     public static final String EMPTY_JSON = "{}";
 
+
     public static final String MULTIPLE_HYPHENS = "-----------------------------------------------------------------------";
 
 
@@ -481,6 +482,5 @@ public abstract class StringUtils {
     public static boolean isStopChar(char ch) {
         return Character.isWhitespace(ch) || STOP_WORD.contains(ch);
     }
-
 
 }

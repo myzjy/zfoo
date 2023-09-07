@@ -23,23 +23,18 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import com.zfoo.orm.OrmContext;
-import com.zfoo.orm.cache.EntityCaches;
-import com.zfoo.orm.cache.IEntityCaches;
-import com.zfoo.orm.model.anno.*;
-import com.zfoo.orm.model.config.OrmConfig;
-import com.zfoo.orm.model.entity.IEntity;
-import com.zfoo.orm.model.vo.EntityDef;
-import com.zfoo.orm.model.vo.IndexDef;
-import com.zfoo.orm.model.vo.IndexTextDef;
+import com.zfoo.orm.anno.*;
+import com.zfoo.orm.cache.EntityCache;
+import com.zfoo.orm.cache.IEntityCache;
+import com.zfoo.orm.config.OrmConfig;
+import com.zfoo.orm.model.EntityDef;
+import com.zfoo.orm.model.IEntity;
+import com.zfoo.orm.model.IndexDef;
+import com.zfoo.orm.model.IndexTextDef;
 import com.zfoo.protocol.collection.ArrayUtils;
 import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.exception.RunException;
-import com.zfoo.protocol.util.AssertionUtils;
-import com.zfoo.protocol.util.JsonUtils;
-import com.zfoo.protocol.util.ReflectionUtils;
-import com.zfoo.protocol.util.StringUtils;
-import com.zfoo.util.math.RandomUtils;
-import com.zfoo.util.net.HostAndPort;
+import com.zfoo.protocol.util.*;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -52,7 +47,6 @@ import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -78,7 +72,7 @@ public class OrmManager implements IOrmManager {
      */
     private final Map<Class<?>, Boolean> allEntityCachesUsableMap = new HashMap<>();
 
-    private final Map<Class<? extends IEntity<?>>, IEntityCaches<?, ?>> entityCachesMap = new HashMap<>();
+    private final Map<Class<? extends IEntity<?>>, IEntityCache<?, ?>> entityCachesMap = new HashMap<>();
 
     private final Map<Class<? extends IEntity<?>>, String> collectionNameMap = new ConcurrentHashMap<>();
 
@@ -92,10 +86,10 @@ public class OrmManager implements IOrmManager {
 
     @Override
     public void initBefore() {
-        var entityDefMap = scanEntityClass();
+        var entityDefMap = entityClass();
 
         for (var entityDef : entityDefMap.values()) {
-            var entityCaches = new EntityCaches(entityDef);
+            var entityCaches = new EntityCache(entityDef);
             entityCachesMap.put(entityDef.getClazz(), entityCaches);
             allEntityCachesUsableMap.put(entityDef.getClazz(), false);
         }
@@ -111,9 +105,14 @@ public class OrmManager implements IOrmManager {
         // 设置数据库地址
         var hostConfig = ormConfig.getHost();
         if (CollectionUtils.isNotEmpty(hostConfig.getAddress())) {
-            var hostList = HostAndPort.toHostAndPortList(hostConfig.getAddress().values())
+            var hostList = hostConfig.getAddress().values()
                     .stream()
-                    .map(it -> new ServerAddress(it.getHost(), it.getPort()))
+                    .map(it -> it.split(StringUtils.COMMA_REGEX))
+                    .flatMap(it -> Arrays.stream(it))
+                    .map(it -> StringUtils.trim(it))
+                    .filter(it -> StringUtils.isNotBlank(it))
+                    .map(it -> it.split(StringUtils.COLON_REGEX))
+                    .map(it -> new ServerAddress(it[0], Integer.parseInt(it[1])))
                     .collect(Collectors.toList());
             mongoBuilder.applyToClusterSettings(builder -> builder.hosts(hostList));
         }
@@ -187,10 +186,10 @@ public class OrmManager implements IOrmManager {
     @Override
     public void inject() {
         var applicationContext = OrmContext.getApplicationContext();
-        var componentBeans =  applicationContext.getBeansWithAnnotation(Component.class);
+        var componentBeans = applicationContext.getBeansWithAnnotation(Component.class);
         for (var bean : componentBeans.values()) {
             ReflectionUtils.filterFieldsInClass(bean.getClass()
-                    , field -> field.isAnnotationPresent(EntityCachesInjection.class)
+                    , field -> field.isAnnotationPresent(EntityCacheAutowired.class)
                     , field -> {
                         Type type = field.getGenericType();
 
@@ -200,7 +199,7 @@ public class OrmManager implements IOrmManager {
 
                         Type[] types = ((ParameterizedType) type).getActualTypeArguments();
                         Class<? extends IEntity<?>> entityClazz = (Class<? extends IEntity<?>>) types[1];
-                        IEntityCaches<?, ?> entityCaches = entityCachesMap.get(entityClazz);
+                        IEntityCache<?, ?> entityCaches = entityCachesMap.get(entityClazz);
 
                         if (entityCaches == null) {
                             throw new RunException("实体缓存对象不存在，请检查配置[entity-package:{}]和[entityCaches:{}]的位置是否正确", ormConfig.getEntityPackage(), entityClazz);
@@ -227,7 +226,7 @@ public class OrmManager implements IOrmManager {
     }
 
     @Override
-    public <E extends IEntity<?>> IEntityCaches<?, E> getEntityCaches(Class<E> clazz) {
+    public <E extends IEntity<?>> IEntityCache<?, E> getEntityCaches(Class<E> clazz) {
         var usable = allEntityCachesUsableMap.get(clazz);
         if (usable == null) {
             throw new RunException("没有定义[]的EntityCaches，无法获取", clazz.getCanonicalName());
@@ -235,11 +234,11 @@ public class OrmManager implements IOrmManager {
         if (!usable) {
             throw new RunException("Orm没有使用[]的EntityCaches，为了节省内存提前释放了它；只有使用EntityCachesInjection注解的Entity才能被动态获取", clazz.getCanonicalName());
         }
-        return (IEntityCaches<?, E>) entityCachesMap.get(clazz);
+        return (IEntityCache<?, E>) entityCachesMap.get(clazz);
     }
 
     @Override
-    public Collection<IEntityCaches<?, ?>> getAllEntityCaches() {
+    public Collection<IEntityCache<?, ?>> getAllEntityCaches() {
         return Collections.unmodifiableCollection(entityCachesMap.values());
     }
 
@@ -259,25 +258,32 @@ public class OrmManager implements IOrmManager {
         return mongodbDatabase.getCollection(collection);
     }
 
-    private Map<Class<? extends IEntity<?>>, EntityDef> scanEntityClass() {
-        var cacheDefMap = new HashMap<Class<? extends IEntity<?>>, EntityDef>();
+    private Map<Class<? extends IEntity<?>>, EntityDef> entityClass() {
+        var classSet = new HashSet<>();
+        // in graalvm environment, PathMatchingResourcePatternResolver/CachingMetadataReaderFactory unable to use, so get it directly in the spring container
+        if (GraalVmUtils.isGraalVM()) {
+            var applicationContext = OrmContext.getApplicationContext();
+            var classes = applicationContext.getBeansWithAnnotation(GraalvmNativeEntityCache.class)
+                    .values()
+                    .stream()
+                    .map(it -> it.getClass())
+                    .collect(Collectors.toList());
+            classSet.addAll(classes);
+        } else {
+            var classes = scanEntityCacheAnno();
+            classSet.addAll(classes);
+        }
 
-        var locationSet = scanEntityCacheAnno(ormConfig.getEntityPackage());
-        for (var location : locationSet) {
-            Class<? extends IEntity<?>> entityClazz;
-            try {
-                entityClazz = (Class<? extends IEntity<?>>) Class.forName(location);
-            } catch (ClassNotFoundException e) {
-                throw new RunException("无法获取实体类[{}]", location);
-            }
-            var cacheDef = parserEntityDef(entityClazz);
-            var previousCacheDef = cacheDefMap.putIfAbsent(entityClazz, cacheDef);
-            AssertionUtils.isNull(previousCacheDef, "缓存实体不能包含重复的[class:{}]", entityClazz.getSimpleName());
+        var cacheDefMap = new HashMap<Class<? extends IEntity<?>>, EntityDef>();
+        for (var clazz : classSet) {
+            var cacheDef = parserEntityDef((Class<? extends IEntity<?>>) clazz);
+            cacheDefMap.putIfAbsent((Class<? extends IEntity<?>>) clazz, cacheDef);
         }
         return cacheDefMap;
     }
 
-    private Set<String> scanEntityCacheAnno(String scanLocation) {
+    private Set<Class<?>> scanEntityCacheAnno() {
+        var scanLocation = ormConfig.getEntityPackage();
         var prefixPattern = "classpath*:";
         var suffixPattern = "**/*.class";
 
@@ -287,32 +293,34 @@ public class OrmManager implements IOrmManager {
         try {
             String packageSearchPath = prefixPattern + scanLocation.replace(StringUtils.PERIOD, StringUtils.SLASH) + StringUtils.SLASH + suffixPattern;
             Resource[] resources = resourcePatternResolver.getResources(packageSearchPath);
-            Set<String> result = new HashSet<>();
-            String name = EntityCache.class.getName();
+            var result = new HashSet<Class<?>>();
+            String name = com.zfoo.orm.anno.EntityCache.class.getName();
             for (Resource resource : resources) {
                 if (resource.isReadable()) {
                     MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(resource);
                     AnnotationMetadata annoMeta = metadataReader.getAnnotationMetadata();
                     if (annoMeta.hasAnnotation(name)) {
                         ClassMetadata clazzMeta = metadataReader.getClassMetadata();
-                        result.add(clazzMeta.getClassName());
+                        result.add(Class.forName(clazzMeta.getClassName()));
                     }
                 }
             }
             return result;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("无法读取实体信息:" + e);
         }
     }
 
 
     public EntityDef parserEntityDef(Class<? extends IEntity<?>> clazz) {
-        analyze(clazz);
+        if (!GraalVmUtils.isGraalVM()) {
+            analyze(clazz);
+        }
 
         var cacheStrategies = ormConfig.getCaches();
         var persisterStrategies = ormConfig.getPersisters();
 
-        var entityCache = clazz.getAnnotation(EntityCache.class);
+        var entityCache = clazz.getAnnotation(com.zfoo.orm.anno.EntityCache.class);
         var cache = entityCache.cache();
         var cacheStrategyOptional = cacheStrategies.stream().filter(it -> it.getStrategy().equals(cache.value())).findFirst();
         AssertionUtils.isTrue(cacheStrategyOptional.isPresent(), "实体类Entity[{}]没有找到缓存策略[{}]", clazz.getSimpleName(), cache.value());
@@ -357,9 +365,9 @@ public class OrmManager implements IOrmManager {
 
     private void analyze(Class<?> clazz) {
         // 是否实现了IEntity接口
-        AssertionUtils.isTrue(IEntity.class.isAssignableFrom(clazz), "被[{}]注解标注的实体类[{}]没有实现接口[{}]", EntityCache.class.getName(), clazz.getCanonicalName(), IEntity.class.getCanonicalName());
+        AssertionUtils.isTrue(IEntity.class.isAssignableFrom(clazz), "被[{}]注解标注的实体类[{}]没有实现接口[{}]", com.zfoo.orm.anno.EntityCache.class.getName(), clazz.getCanonicalName(), IEntity.class.getCanonicalName());
         // 实体类Entity必须被注解EntityCache标注
-        AssertionUtils.notNull(clazz.getAnnotation(EntityCache.class), "实体类Entity[{}]必须被注解[{}]标注", clazz.getCanonicalName(), EntityCache.class.getName());
+        AssertionUtils.notNull(clazz.getAnnotation(com.zfoo.orm.anno.EntityCache.class), "实体类Entity[{}]必须被注解[{}]标注", clazz.getCanonicalName(), com.zfoo.orm.anno.EntityCache.class.getName());
 
         // 校验entity格式
         var entitySubClassMap = new HashMap<Class<?>, Set<Class<?>>>();
@@ -463,7 +471,7 @@ public class OrmManager implements IOrmManager {
         ReflectionUtils.publicEmptyConstructor(clazz);
 
         // 不能使用Storage的Index注解
-        var storageIndexes = ReflectionUtils.getFieldsByAnnoNameInPOJOClass(clazz, "com.zfoo.storage.model.anno.Index");
+        var storageIndexes = ReflectionUtils.getFieldsByAnnoNameInPOJOClass(clazz, "com.zfoo.storage.anno.Index");
         if (ArrayUtils.isNotEmpty(storageIndexes)) {
             throw new RunException("在Orm中只能使用Orm的Index注解，不能使用Storage的Index注解，为了避免不必要的误解和增强项目的健壮性，禁止这样使用");
         }

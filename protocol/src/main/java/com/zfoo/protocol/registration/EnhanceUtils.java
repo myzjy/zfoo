@@ -13,12 +13,11 @@
 
 package com.zfoo.protocol.registration;
 
-import com.zfoo.protocol.IPacket;
+import com.zfoo.protocol.anno.Compatible;
 import com.zfoo.protocol.buffer.ByteBufUtils;
 import com.zfoo.protocol.collection.ArrayUtils;
 import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.generate.GenerateProtocolFile;
-import com.zfoo.protocol.registration.anno.Compatible;
 import com.zfoo.protocol.registration.field.IFieldRegistration;
 import com.zfoo.protocol.serializer.enhance.*;
 import com.zfoo.protocol.serializer.reflect.*;
@@ -51,12 +50,11 @@ public abstract class EnhanceUtils {
     public static String byteBufUtilsWriteInt0 = byteBufUtils + ".writeInt($1, 0);";
 
     static {
-        var classArray = new Class<?>[]{IPacket.class, IProtocolRegistration.class, IFieldRegistration.class, ByteBuf.class};
+        var classArray = new Class<?>[]{IProtocolRegistration.class, IFieldRegistration.class, ByteBuf.class};
 
         var classPool = ClassPool.getDefault();
 
         // 导入需要的包
-        classPool.importPackage(IPacket.class.getCanonicalName());
         classPool.importPackage(ByteBufUtils.class.getCanonicalName());
         classPool.importPackage(CollectionUtils.class.getCanonicalName());
         classPool.importPackage(ArrayUtils.class.getCanonicalName());
@@ -159,7 +157,7 @@ public abstract class EnhanceUtils {
         moduleMethod.setBody("{return " + registration.module() + ";}");
         enhanceClazz.addMethod(moduleMethod);
 
-        CtMethod writeMethod = new CtMethod(classPool.get(void.class.getCanonicalName()), "write", classPool.get(new String[]{ByteBuf.class.getCanonicalName(), IPacket.class.getCanonicalName()}), enhanceClazz);
+        CtMethod writeMethod = new CtMethod(classPool.get(void.class.getCanonicalName()), "write", classPool.get(new String[]{ByteBuf.class.getCanonicalName(), Object.class.getCanonicalName()}), enhanceClazz);
         writeMethod.setModifiers(Modifier.PUBLIC + Modifier.FINAL);
         writeMethod.setBody(writeMethodBody(registration));
         enhanceClazz.addMethod(writeMethod);
@@ -219,11 +217,12 @@ public abstract class EnhanceUtils {
         for (var i = 0; i < fields.length; i++) {
             var field = fields[i];
             var fieldRegistration = fieldRegistrations[i];
-            var readObject = enhanceSerializer(fieldRegistration.serializer()).readObject(builder, field, fieldRegistration);
-            // 协议向后兼容
+            // protocol backwards compatibility，协议向后兼容
             if (field.isAnnotationPresent(Compatible.class)) {
                 builder.append("if(!$1.isReadable()){ return packet; }");
             }
+
+            var readObject = enhanceSerializer(fieldRegistration.serializer()).readObject(builder, field, fieldRegistration);
 
             if (Modifier.isPublic(field.getModifiers())) {
                 builder.append(StringUtils.format("packet.{}={};", field.getName(), readObject));

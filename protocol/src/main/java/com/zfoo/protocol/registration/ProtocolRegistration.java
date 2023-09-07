@@ -13,9 +13,8 @@
 
 package com.zfoo.protocol.registration;
 
-import com.zfoo.protocol.IPacket;
+import com.zfoo.protocol.anno.Compatible;
 import com.zfoo.protocol.buffer.ByteBufUtils;
-import com.zfoo.protocol.registration.anno.Compatible;
 import com.zfoo.protocol.registration.field.IFieldRegistration;
 import com.zfoo.protocol.serializer.reflect.ISerializer;
 import com.zfoo.protocol.util.ReflectionUtils;
@@ -25,14 +24,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
 /**
- * 协议必须为一个简单的POJO对象，必须有一个标识为private static final transient的PROTOCOL_ID号
- * 必须实现IPacket接口,返回的protocolId必须和PROTOCOL_ID号一致
- *
  * @author godotg
  * @version 3.0
  */
 public class ProtocolRegistration implements IProtocolRegistration {
-
 
     private short id;
     private byte module;
@@ -65,7 +60,7 @@ public class ProtocolRegistration implements IProtocolRegistration {
 
 
     @Override
-    public void write(ByteBuf buffer, IPacket packet) {
+    public void write(ByteBuf buffer, Object packet) {
         if (packet == null) {
             ByteBufUtils.writeBoolean(buffer, false);
             return;

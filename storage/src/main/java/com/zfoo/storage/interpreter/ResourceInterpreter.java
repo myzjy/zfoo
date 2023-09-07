@@ -15,10 +15,10 @@ package com.zfoo.storage.interpreter;
 import com.zfoo.protocol.exception.RunException;
 import com.zfoo.protocol.util.ReflectionUtils;
 import com.zfoo.protocol.util.StringUtils;
-import com.zfoo.storage.model.anno.ExcelFieldName;
-import com.zfoo.storage.model.anno.Id;
-import com.zfoo.storage.model.resource.ResourceData;
-import com.zfoo.storage.model.resource.ResourceEnum;
+import com.zfoo.storage.anno.AliasFieldName;
+import com.zfoo.storage.anno.Id;
+import com.zfoo.storage.interpreter.data.StorageData;
+import com.zfoo.storage.interpreter.data.StorageEnum;
 import com.zfoo.storage.strategy.*;
 import org.springframework.context.support.ConversionServiceFactoryBean;
 import org.springframework.core.convert.TypeDescriptor;
@@ -53,13 +53,13 @@ public class ResourceInterpreter {
     }
 
     public static <T> List<T> read(InputStream inputStream, Class<T> clazz, String suffix) throws IOException {
-        ResourceData resource = null;
-        var resourceEnum = ResourceEnum.getResourceEnumByType(suffix);
-        if (resourceEnum == ResourceEnum.JSON) {
-            resource = JsonReader.readResourceDataFromCSV(inputStream);
-        } else if (resourceEnum == ResourceEnum.EXCEL_XLS || resourceEnum == ResourceEnum.EXCEL_XLSX) {
+        StorageData resource = null;
+        var resourceEnum = StorageEnum.getResourceEnumByType(suffix);
+        if (resourceEnum == StorageEnum.JSON) {
+            resource = JsonReader.readResourceDataFromJson(inputStream);
+        } else if (resourceEnum == StorageEnum.EXCEL_XLS || resourceEnum == StorageEnum.EXCEL_XLSX) {
             resource = ExcelReader.readResourceDataFromExcel(inputStream, clazz.getSimpleName());
-        } else if (resourceEnum == ResourceEnum.CSV) {
+        } else if (resourceEnum == StorageEnum.CSV) {
             resource = CsvReader.readResourceDataFromCSV(inputStream, clazz.getSimpleName());
         } else {
             throw new RunException("Configuration type [{}] of file [{}] is not supported", suffix, clazz.getSimpleName());
@@ -100,7 +100,7 @@ public class ResourceInterpreter {
 
     // 优先使用ExcelFieldName注解表示的值当作列名
     private static String getExcelFieldName(Field field) {
-        return field.isAnnotationPresent(ExcelFieldName.class) ? field.getAnnotation(ExcelFieldName.class).value() : field.getName();
+        return field.isAnnotationPresent(AliasFieldName.class) ? field.getAnnotation(AliasFieldName.class).value() : field.getName();
     }
 
     // 只读取代码里写的字段
@@ -133,7 +133,7 @@ public class ResourceInterpreter {
         }
     }
 
-    public static Map<String, Integer> getCellFieldMap(ResourceData resource, Class<?> clazz) {
+    public static Map<String, Integer> getCellFieldMap(StorageData resource, Class<?> clazz) {
         var header = resource.getHeaders();
         if (header == null) {
             throw new RunException("Failed to get attribute control column from excel file of resource [class:{}]", clazz.getSimpleName());

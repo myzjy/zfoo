@@ -13,7 +13,8 @@
 
 package com.zfoo.protocol.serializer.cpp;
 
-import com.zfoo.protocol.IPacket;
+import com.zfoo.protocol.ProtocolManager;
+import com.zfoo.protocol.anno.Compatible;
 import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.generate.GenerateOperation;
 import com.zfoo.protocol.generate.GenerateProtocolFile;
@@ -23,12 +24,14 @@ import com.zfoo.protocol.model.Pair;
 import com.zfoo.protocol.registration.IProtocolRegistration;
 import com.zfoo.protocol.registration.ProtocolAnalysis;
 import com.zfoo.protocol.registration.ProtocolRegistration;
-import com.zfoo.protocol.registration.anno.Compatible;
 import com.zfoo.protocol.registration.field.IFieldRegistration;
 import com.zfoo.protocol.serializer.CodeLanguage;
 import com.zfoo.protocol.serializer.enhance.EnhanceObjectProtocolSerializer;
 import com.zfoo.protocol.serializer.reflect.*;
-import com.zfoo.protocol.util.*;
+import com.zfoo.protocol.util.ClassUtils;
+import com.zfoo.protocol.util.FileUtils;
+import com.zfoo.protocol.util.ReflectionUtils;
+import com.zfoo.protocol.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,7 +100,7 @@ public abstract class GenerateCppUtils {
             FileUtils.writeInputStreamToFile(createFile, fileInputStream);
         }
 
-        var protocolManagerTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("cpp/ProtocolManagerTemplate.h")));
+        var protocolManagerTemplate = ClassUtils.getFileFromClassPathToString("cpp/ProtocolManagerTemplate.h");
 
         var headerBuilder = new StringBuilder();
         var initProtocolBuilder = new StringBuilder();
@@ -120,7 +123,7 @@ public abstract class GenerateCppUtils {
         var registrationConstructor = registration.getConstructor();
 
         var protocolClazzName = registrationConstructor.getDeclaringClass().getSimpleName();
-        var protocolTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("cpp/ProtocolTemplate.h")));
+        var protocolTemplate = ClassUtils.getFileFromClassPathToString("cpp/ProtocolTemplate.h");
 
         // protocol object
         var defineProtocolName = protocolClazzName.toUpperCase();
@@ -247,7 +250,7 @@ public abstract class GenerateCppUtils {
             var field = fields[i];
             var fieldRegistration = fieldRegistrations[i];
             var serializer = cppSerializer(fieldRegistration.serializer());
-            if (IPacket.class.isAssignableFrom(field.getType())) {
+            if (ProtocolManager.isProtocolClass(field.getType())) {
                 serializer.writeObject(cppBuilder, "&message->" + field.getName(), 3, field, fieldRegistration);
             } else {
                 serializer.writeObject(cppBuilder, "message->" + field.getName(), 3, field, fieldRegistration);
@@ -272,7 +275,7 @@ public abstract class GenerateCppUtils {
 
             var readObject = cppSerializer(fieldRegistration.serializer()).readObject(cppBuilder, 3, field, fieldRegistration);
             cppBuilder.append(TAB + TAB + TAB);
-            if (IPacket.class.isAssignableFrom(field.getType())) {
+            if (ProtocolManager.isProtocolClass(field.getType())) {
                 cppBuilder.append(StringUtils.format("packet->{} = *{};", field.getName(), readObject));
             } else {
                 cppBuilder.append(StringUtils.format("packet->{} = {};", field.getName(), readObject));
@@ -283,10 +286,9 @@ public abstract class GenerateCppUtils {
         return cppBuilder.toString();
     }
 
-
     public static String toCppClassName(String typeName) {
         typeName = typeName.replaceAll("java.util.|java.lang.", StringUtils.EMPTY);
-        typeName = typeName.replaceAll("com\\.[a-zA-Z0-9_.]*\\.", StringUtils.EMPTY);
+        typeName = typeName.replaceAll("[a-zA-Z0-9_.]*\\.", StringUtils.EMPTY);
 
         // CSharp不适用基础类型的泛型，会影响性能
         switch (typeName) {

@@ -4,7 +4,7 @@
 
 - [zfoo protocol](https://github.com/zfoo-project/zfoo/blob/main/protocol/README.md)
   是目前的Java二进制序列化和反序列化速度最快的框架，并且为序列化字节最少的框架
-- 协议目前原生支持 **C++ Java Javascript C# Go Lua GDScript**，可以轻易实现跨平台
+- 协议目前原生支持 **C++ Java Javascript C# Go Lua GDScript Python**，可以轻易实现跨平台
 - 协议可以自定义私有协议格式，让你的协议更加安全，支持增加字段和兼容前后版本协议
 - 兼容protobuf，支持生成protobuf协议文件，提供从pojo到proto的生成方式
 - proto文件到生成pojo的方式已经有不少jetbrains插件可以做到，可以在idea的plugin中搜索proto
@@ -126,25 +126,7 @@ cpu： i9900k
       }
       ```
 
-    - 第二种使用静态常量+接口：这个协议号的值必须和IPacket接口返回的值一样，这样的方式可以微弱的提升一点性能
-      ```
-      public class SimpleObject implements IPacket {
-      
-          public static final short PROTOCOL_ID = 104;
-      
-          public int c;
-      
-          public boolean g;
-      
-          @Override
-          public short protocolId() {
-              return PROTOCOL_ID;
-          }
-      
-      }
-      ```
-
-    - 第三种使用：通过ProtocolManager.initProtocolAuto()去注册协议就可以不写协议号
+    - 第二种使用：通过ProtocolManager.initProtocolAuto()去注册协议就可以不写协议号
       ```
       public class SimpleObject implements IPacket {
       

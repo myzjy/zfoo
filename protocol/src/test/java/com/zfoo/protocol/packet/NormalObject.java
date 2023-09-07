@@ -13,7 +13,8 @@
 
 package com.zfoo.protocol.packet;
 
-import com.zfoo.protocol.IPacket;
+
+import com.zfoo.protocol.anno.Protocol;
 
 import java.util.List;
 import java.util.Map;
@@ -23,9 +24,8 @@ import java.util.Set;
  * @author godotg
  * @version 3.0
  */
-public class NormalObject implements IPacket {
-
-    public static final transient short PROTOCOL_ID = 101;
+@Protocol(id = 101)
+public class NormalObject {
 
     private byte a;
     private byte[] aaa;
@@ -57,11 +57,6 @@ public class NormalObject implements IPacket {
 
     private Set<Integer> s;
     private Set<String> ssss;
-
-    @Override
-    public short protocolId() {
-        return PROTOCOL_ID;
-    }
 
     public byte getA() {
         return a;

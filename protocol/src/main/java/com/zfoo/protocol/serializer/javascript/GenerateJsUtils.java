@@ -13,6 +13,7 @@
 
 package com.zfoo.protocol.serializer.javascript;
 
+import com.zfoo.protocol.anno.Compatible;
 import com.zfoo.protocol.generate.GenerateOperation;
 import com.zfoo.protocol.generate.GenerateProtocolFile;
 import com.zfoo.protocol.generate.GenerateProtocolNote;
@@ -20,12 +21,10 @@ import com.zfoo.protocol.generate.GenerateProtocolPath;
 import com.zfoo.protocol.model.Pair;
 import com.zfoo.protocol.registration.IProtocolRegistration;
 import com.zfoo.protocol.registration.ProtocolRegistration;
-import com.zfoo.protocol.registration.anno.Compatible;
 import com.zfoo.protocol.serializer.CodeLanguage;
 import com.zfoo.protocol.serializer.reflect.*;
 import com.zfoo.protocol.util.ClassUtils;
 import com.zfoo.protocol.util.FileUtils;
-import com.zfoo.protocol.util.IOUtils;
 import com.zfoo.protocol.util.StringUtils;
 
 import java.io.File;
@@ -91,7 +90,7 @@ public abstract class GenerateJsUtils {
         }
 
         // 生成ProtocolManager.js文件
-        var protocolManagerTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("javascript/ProtocolManagerTemplate.js")));
+        var protocolManagerTemplate = ClassUtils.getFileFromClassPathToString("javascript/ProtocolManagerTemplate.js");
 
         var importBuilder = new StringBuilder();
         var initProtocolBuilder = new StringBuilder();
@@ -115,7 +114,7 @@ public abstract class GenerateJsUtils {
         var registrationConstructor = registration.getConstructor();
         var protocolClazzName = registrationConstructor.getDeclaringClass().getSimpleName();
 
-        var protocolTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("javascript/ProtocolTemplate.js")));
+        var protocolTemplate = ClassUtils.getFileFromClassPathToString("javascript/ProtocolTemplate.js");
 
         var classNote = GenerateProtocolNote.classNote(protocolId, CodeLanguage.JavaScript);
         var valueOfMethod = valueOfMethod(registration);

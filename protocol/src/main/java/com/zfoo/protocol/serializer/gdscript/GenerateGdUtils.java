@@ -13,6 +13,7 @@
 
 package com.zfoo.protocol.serializer.gdscript;
 
+import com.zfoo.protocol.anno.Compatible;
 import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.generate.GenerateOperation;
 import com.zfoo.protocol.generate.GenerateProtocolFile;
@@ -21,12 +22,15 @@ import com.zfoo.protocol.generate.GenerateProtocolPath;
 import com.zfoo.protocol.registration.IProtocolRegistration;
 import com.zfoo.protocol.registration.ProtocolAnalysis;
 import com.zfoo.protocol.registration.ProtocolRegistration;
-import com.zfoo.protocol.registration.anno.Compatible;
 import com.zfoo.protocol.registration.field.IFieldRegistration;
+import com.zfoo.protocol.registration.field.MapField;
 import com.zfoo.protocol.serializer.CodeLanguage;
 import com.zfoo.protocol.serializer.enhance.EnhanceObjectProtocolSerializer;
 import com.zfoo.protocol.serializer.reflect.*;
-import com.zfoo.protocol.util.*;
+import com.zfoo.protocol.util.ClassUtils;
+import com.zfoo.protocol.util.FileUtils;
+import com.zfoo.protocol.util.ReflectionUtils;
+import com.zfoo.protocol.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -90,10 +94,10 @@ public abstract class GenerateGdUtils {
 
     public static void createProtocolManager(List<IProtocolRegistration> protocolList) throws IOException {
         var byteBufferFile = new File(StringUtils.format("{}/{}", protocolOutputPath, "ByteBuffer.gd"));
-        var byteBufferTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("gdscript/buffer/ByteBuffer.gd")));
+        var byteBufferTemplate = ClassUtils.getFileFromClassPathToString("gdscript/buffer/ByteBuffer.gd");
         FileUtils.writeStringToFile(byteBufferFile, StringUtils.format(byteBufferTemplate, protocolOutputRootPath), false);
 
-        var protocolManagerTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("gdscript/ProtocolManagerTemplate.gd")));
+        var protocolManagerTemplate = ClassUtils.getFileFromClassPathToString("gdscript/ProtocolManagerTemplate.gd");
         // 生成ProtocolManager.gd文件
         var importBuilder = new StringBuilder();
         var initList = new ArrayList<String>();
@@ -124,7 +128,7 @@ public abstract class GenerateGdUtils {
         var writeObject = writeObject(registration);
         var readObject = readObject(registration);
 
-        var protocolTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("gdscript/ProtocolTemplate.gd")));
+        var protocolTemplate = ClassUtils.getFileFromClassPathToString("gdscript/ProtocolTemplate.gd");
         protocolTemplate = StringUtils.format(protocolTemplate, protocolId, protocolClazzName, includeSubProtocol, classNote, fieldDefinition.trim(),
                 StringUtils.EMPTY_JSON, toStringMethod, writeObject.trim(), readObject.trim());
 
@@ -166,7 +170,16 @@ public abstract class GenerateGdUtils {
             }
             var fieldType = gdSerializer(fieldRegistration.serializer()).fieldType(field, fieldRegistration);
             // 生成类型的注释
-            gdBuilder.append(StringUtils.format("var {}: {}", fieldName, fieldType)).append(LS);
+            gdBuilder.append(StringUtils.format("var {}: {}", fieldName, fieldType));
+            if (fieldRegistration instanceof MapField) {
+                var mapField = (MapField) fieldRegistration;
+                var mapKeyRegistration = mapField.getMapKeyRegistration();
+                var keyType = gdSerializer(mapKeyRegistration.serializer()).fieldType(field, mapKeyRegistration);
+                var mapValueRegistration = mapField.getMapValueRegistration();
+                var valueType = gdSerializer(mapValueRegistration.serializer()).fieldType(field, mapValueRegistration);
+                gdBuilder.append(StringUtils.format(" # Dictionary<{}, {}>", keyType, valueType));
+            }
+            gdBuilder.append(LS);
         }
         return gdBuilder.toString();
     }
@@ -217,8 +230,4 @@ public abstract class GenerateGdUtils {
         return gdBuilder.toString();
     }
 
-    public static StringBuilder addTab(StringBuilder builder, int deep) {
-        builder.append(TAB_ASCII.repeat(Math.max(0, deep)));
-        return builder;
-    }
 }

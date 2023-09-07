@@ -13,17 +13,16 @@
 
 package com.zfoo.protocol.packet;
 
-import com.zfoo.protocol.IPacket;
-import com.zfoo.protocol.registration.anno.Compatible;
-import com.zfoo.protocol.registration.anno.Note;
-import com.zfoo.protocol.registration.anno.Protocol;
+
+import com.zfoo.protocol.anno.Compatible;
+import com.zfoo.protocol.anno.Note;
+import com.zfoo.protocol.anno.Protocol;
 
 import java.util.*;
 
-@Protocol(note = "复杂的对象，包括了各种复杂的结构，数组，List，Set，Map")
-public class ComplexObject implements IPacket {
+@Protocol(id = 100, note = "复杂的对象，包括了各种复杂的结构，数组，List，Set，Map")
+public class ComplexObject {
 
-    public static final transient short PROTOCOL_ID = 100;
 
     @Note("byte类型，最简单的整形")
     private byte a;
@@ -98,11 +97,6 @@ public class ComplexObject implements IPacket {
     private int myCompatible;
     @Compatible(order = 2)
     private ObjectA myObject;
-
-    @Override
-    public short protocolId() {
-        return PROTOCOL_ID;
-    }
 
     public byte getA() {
         return a;

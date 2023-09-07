@@ -21,22 +21,30 @@ public enum CodeLanguage {
     /**
      * Javassist字节码增强
      */
-    Enhance,
+    Enhance(1),
 
-    Cpp,
+    Cpp(1 << 1),
 
-    Go,
+    Go(1 << 2),
 
-    JavaScript,
+    JavaScript(1 << 3),
 
-    TypeScript,
+    TypeScript(1 << 4),
 
-    Lua,
+    Lua(1 << 5),
 
-    CSharp,
+    CSharp(1 << 6),
 
-    GdScript,
+    GdScript(1 << 7),
 
-    Protobuf
+    Python(1 << 8),
+
+    Protobuf(1 << 12);
+
+    public final int id;
+
+    private CodeLanguage(int id) {
+        this.id = id;
+    }
 
 }

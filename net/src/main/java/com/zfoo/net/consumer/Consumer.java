@@ -16,6 +16,7 @@ package com.zfoo.net.consumer;
 import com.zfoo.net.NetContext;
 import com.zfoo.net.consumer.balancer.AbstractConsumerLoadBalancer;
 import com.zfoo.net.consumer.balancer.IConsumerLoadBalancer;
+import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.packet.common.Error;
 import com.zfoo.net.router.Router;
 import com.zfoo.net.router.answer.AsyncAnswer;
@@ -27,7 +28,6 @@ import com.zfoo.net.router.exception.NetTimeOutException;
 import com.zfoo.net.router.exception.UnexpectedProtocolException;
 import com.zfoo.net.router.route.SignalBridge;
 import com.zfoo.net.task.TaskBus;
-import com.zfoo.protocol.IPacket;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.registration.ProtocolModule;
@@ -74,7 +74,7 @@ public class Consumer implements IConsumer {
     @Override
     public void send(IPacket packet, Object argument) {
         try {
-            var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocolId(packet.protocolId()));
+            var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocol(packet.getClass()));
             var session = loadBalancer.loadBalancer(packet, argument);
             var taskExecutorHash = TaskBus.calTaskExecutorHash(argument);
             NetContext.getRouter().send(session, packet, NoAnswerAttachment.valueOf(taskExecutorHash));
@@ -85,7 +85,7 @@ public class Consumer implements IConsumer {
 
     @Override
     public <T extends IPacket> SyncAnswer<T> syncAsk(IPacket packet, Class<T> answerClass, Object argument) throws Exception {
-        var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocolId(packet.protocolId()));
+        var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocol(packet.getClass()));
         var session = loadBalancer.loadBalancer(packet, argument);
 
 
@@ -104,7 +104,7 @@ public class Consumer implements IConsumer {
 
             IPacket responsePacket = clientSignalAttachment.getResponseFuture().get(Router.DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
 
-            if (responsePacket.protocolId() == Error.errorProtocolId()) {
+            if (responsePacket.getClass() == Error.class) {
                 throw new ErrorResponseException((Error) responsePacket);
             }
             if (answerClass != null && answerClass != responsePacket.getClass()) {
@@ -124,7 +124,7 @@ public class Consumer implements IConsumer {
 
     @Override
     public <T extends IPacket> AsyncAnswer<T> asyncAsk(IPacket packet, Class<T> answerClass, Object argument) {
-        var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocolId(packet.protocolId()));
+        var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocol(packet.getClass()));
         var session = loadBalancer.loadBalancer(packet, argument);
         var asyncAnswer = NetContext.getRouter().asyncAsk(session, packet, answerClass, argument);
 

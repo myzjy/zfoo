@@ -13,7 +13,7 @@
 
 package com.zfoo.protocol.serializer.cpp;
 
-import com.zfoo.protocol.IPacket;
+import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.generate.GenerateProtocolFile;
 import com.zfoo.protocol.model.Pair;
 import com.zfoo.protocol.registration.field.IFieldRegistration;
@@ -44,11 +44,11 @@ public class CppObjectProtocolSerializer implements ICppSerializer {
     public void writeObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
         ObjectProtocolField objectProtocolField = (ObjectProtocolField) fieldRegistration;
         GenerateProtocolFile.addTab(builder, deep);
-        if (IPacket.class.isAssignableFrom(field.getType())) {
+        if (ProtocolManager.isProtocolClass(field.getType())) {
             builder.append(StringUtils.format("buffer.writePacket({}, {});", objectStr, objectProtocolField.getProtocolId()))
                     .append(LS);
         } else {
-            builder.append(StringUtils.format("buffer.writePacket((IPacket *) &{}, {});", objectStr, objectProtocolField.getProtocolId()))
+            builder.append(StringUtils.format("buffer.writePacket((IProtocol *) &{}, {});", objectStr, objectProtocolField.getProtocolId()))
                     .append(LS);
         }
     }

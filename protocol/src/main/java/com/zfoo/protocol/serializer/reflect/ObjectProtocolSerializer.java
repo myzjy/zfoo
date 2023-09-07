@@ -13,7 +13,6 @@
 
 package com.zfoo.protocol.serializer.reflect;
 
-import com.zfoo.protocol.IPacket;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.registration.IProtocolRegistration;
 import com.zfoo.protocol.registration.field.IFieldRegistration;
@@ -32,13 +31,12 @@ public class ObjectProtocolSerializer implements ISerializer {
 
     /**
      * @param buffer ByteBuf
-     * @param object 必须继承IPacket接口
      */
     @Override
     public void writeObject(ByteBuf buffer, Object object, IFieldRegistration fieldRegistration) {
         ObjectProtocolField objectProtocolField = (ObjectProtocolField) fieldRegistration;
         IProtocolRegistration protocol = ProtocolManager.getProtocol(objectProtocolField.getProtocolId());
-        protocol.write(buffer, (IPacket) object);
+        protocol.write(buffer, object);
     }
 
     @Override

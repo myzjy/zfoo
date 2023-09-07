@@ -16,7 +16,7 @@ package com.zfoo.orm.cache;
 import com.mongodb.client.model.Filters;
 import com.zfoo.orm.OrmContext;
 import com.zfoo.orm.entity.UserEntity;
-import com.zfoo.util.ThreadUtils;
+import com.zfoo.protocol.util.ThreadUtils;
 import org.bson.Document;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -36,7 +36,7 @@ public class EntityCachesTest {
         var context = new ClassPathXmlApplicationContext("application.xml");
 
         // 动态去拿到UserEntity的EntityCaches
-        var userEntityCaches = (IEntityCaches<Long, UserEntity>) OrmContext.getOrmManager().getEntityCaches(UserEntity.class);
+        var userEntityCaches = (IEntityCache<Long, UserEntity>) OrmContext.getOrmManager().getEntityCaches(UserEntity.class);
 
         for (var i = 1; i <= 10; i++) {
             var entity = userEntityCaches.load((long) i);

@@ -15,8 +15,8 @@ package com.zfoo.net.handler.codec.json;
 
 import com.zfoo.net.packet.DecodedPacketInfo;
 import com.zfoo.net.packet.EncodedPacketInfo;
+import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.router.attachment.IAttachment;
-import com.zfoo.protocol.IPacket;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.buffer.ByteBufUtils;
 import com.zfoo.protocol.util.JsonUtils;
@@ -44,7 +44,7 @@ public class JsonWebSocketCodecHandler extends MessageToMessageCodec<WebSocketFr
         var packetStr = jsonMap.get("packet");
         var attachmentStr = jsonMap.get("attachmentId");
         IAttachment attachment = null;
-        if (!StringUtils.isEmpty(attachmentStr)) {
+        if (StringUtils.isNotEmpty(attachmentStr)) {
             var attachmentId = Short.parseShort(attachmentStr);
             if (attachmentId >= 0) {
                 var attachmentClass = ProtocolManager.getProtocol(attachmentId).protocolConstructor().getDeclaringClass();
@@ -63,8 +63,8 @@ public class JsonWebSocketCodecHandler extends MessageToMessageCodec<WebSocketFr
 
         var packet = out.getPacket();
         var attachment = out.getAttachment();
-        var attachmentId = attachment == null ? -1 : attachment.protocolId();
-        var jsonPacket = JsonPacket.valueOf(packet.protocolId(), packet, attachmentId, attachment);
+        var attachmentId = attachment == null ? -1 : ProtocolManager.protocolId(attachment.getClass());
+        var jsonPacket = JsonPacket.valueOf(ProtocolManager.protocolId(packet.getClass()), packet, attachmentId, attachment);
         var bytes = StringUtils.bytes(JsonUtils.object2String(jsonPacket));
         byteBuf.writeBytes(bytes);
 

@@ -13,21 +13,21 @@
 
 package com.zfoo.net.router.route;
 
+import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.packet.PacketService;
 import com.zfoo.net.router.attachment.GatewayAttachment;
-import com.zfoo.net.router.attachment.HttpAttachment;
 import com.zfoo.net.router.attachment.IAttachment;
-import com.zfoo.net.router.attachment.UdpAttachment;
+import com.zfoo.net.router.attachment.SignalAttachment;
 import com.zfoo.net.router.receiver.EnhanceUtils;
 import com.zfoo.net.router.receiver.IPacketReceiver;
-import com.zfoo.net.router.receiver.PacketReceiver;
+import com.zfoo.net.anno.PacketReceiver;
 import com.zfoo.net.router.receiver.PacketReceiverDefinition;
 import com.zfoo.net.session.Session;
-import com.zfoo.protocol.IPacket;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.collection.ArrayUtils;
 import com.zfoo.protocol.exception.RunException;
 import com.zfoo.protocol.util.AssertionUtils;
+import com.zfoo.protocol.util.GraalVmUtils;
 import com.zfoo.protocol.util.ReflectionUtils;
 import com.zfoo.protocol.util.StringUtils;
 import io.netty.util.collection.ShortObjectHashMap;
@@ -53,7 +53,7 @@ public abstract class PacketBus {
      * The routing of the message
      */
     public static void route(Session session, IPacket packet, IAttachment attachment) {
-        var receiver = receiverMap.get(packet.protocolId());
+        var receiver = receiverMap.get(ProtocolManager.protocolId(packet.getClass()));
         if (receiver == null) {
             var name = packet.getClass().getSimpleName();
             throw new RuntimeException(StringUtils.format("no any packetReceiver:[at{}] found for this packet:[{}] or no GatewayAttachment sent back if this server is gateway", name, name));
@@ -97,11 +97,13 @@ public abstract class PacketBus {
             var expectedMethodName = StringUtils.format("at{}", packetClazz.getSimpleName());
             AssertionUtils.isTrue(methodName.equals(expectedMethodName), "[class:{}] [method:{}] [packet:{}] expects '{}' as method name!", bean.getClass().getName(), methodName, packetName, expectedMethodName);
 
-            // If the request class name ends with Request, then the attachment should be a Gateway Attachment
-            // If the request class name ends with Ask, then attachment cannot be a Gateway Attachment
+            // These rules are not necessary, but can reduce us from making low-level mistakes
+            // If the request class name ends with Request which is for outer net client, then the attachment can not be a SignalAttachment
+            // If the request class name ends with Ask which is for intranet client, then attachment can not be a GatewayAttachment
             if (attachmentClazz != null) {
                 if (packetName.endsWith(PacketService.NET_REQUEST_SUFFIX)) {
-                    AssertionUtils.isTrue(attachmentClazz.equals(GatewayAttachment.class) || attachmentClazz.equals(UdpAttachment.class) || attachmentClazz.equals(HttpAttachment.class), "[class:{}] [method:{}] [packet:{}] must use [attachment:{}]!", bean.getClass().getName(), methodName, packetName, GatewayAttachment.class.getCanonicalName());
+                    AssertionUtils.isTrue(!attachmentClazz.equals(SignalAttachment.class), "[class:{}] [method:{}] [packet:{}] must use [attachment:{}]!"
+                            , bean.getClass().getName(), methodName, packetName, GatewayAttachment.class.getCanonicalName());
                 } else if (packetName.endsWith(PacketService.NET_ASK_SUFFIX)) {
                     AssertionUtils.isTrue(!attachmentClazz.equals(GatewayAttachment.class), "[class:{}] [method:{}] [packet:{}] can not match with [attachment:{}]!", bean.getClass().getName(), methodName, packetName, GatewayAttachment.class.getCanonicalName());
                 }
@@ -118,8 +120,12 @@ public abstract class PacketBus {
                 AssertionUtils.isNull(receiverMap.get(protocolId), "duplicate protocol registration, @PacketReceiver [class:{}] is repeatedly received [at{}]", packetClazz.getSimpleName(), packetClazz.getSimpleName());
 
                 var receiverDefinition = new PacketReceiverDefinition(bean, method, packetClazz, attachmentClazz);
-                var enhanceReceiverDefinition = EnhanceUtils.createPacketReceiver(receiverDefinition);
-                receiverMap.put(protocolId, enhanceReceiverDefinition);
+                if (GraalVmUtils.isGraalVM()) {
+                    receiverMap.put(protocolId, receiverDefinition);
+                } else {
+                    var enhanceReceiverDefinition = EnhanceUtils.createPacketReceiver(receiverDefinition);
+                    receiverMap.put(protocolId, enhanceReceiverDefinition);
+                }
             } catch (Throwable t) {
                 throw new RunException("Registration protocol [class:{}] unknown exception", packetClazz.getSimpleName(), t);
             }

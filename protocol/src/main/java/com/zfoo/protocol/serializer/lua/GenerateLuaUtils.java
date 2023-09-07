@@ -13,6 +13,7 @@
 
 package com.zfoo.protocol.serializer.lua;
 
+import com.zfoo.protocol.anno.Compatible;
 import com.zfoo.protocol.generate.GenerateOperation;
 import com.zfoo.protocol.generate.GenerateProtocolFile;
 import com.zfoo.protocol.generate.GenerateProtocolNote;
@@ -20,12 +21,10 @@ import com.zfoo.protocol.generate.GenerateProtocolPath;
 import com.zfoo.protocol.model.Pair;
 import com.zfoo.protocol.registration.IProtocolRegistration;
 import com.zfoo.protocol.registration.ProtocolRegistration;
-import com.zfoo.protocol.registration.anno.Compatible;
 import com.zfoo.protocol.serializer.CodeLanguage;
 import com.zfoo.protocol.serializer.reflect.*;
 import com.zfoo.protocol.util.ClassUtils;
 import com.zfoo.protocol.util.FileUtils;
-import com.zfoo.protocol.util.IOUtils;
 import com.zfoo.protocol.util.StringUtils;
 
 import java.io.File;
@@ -90,7 +89,7 @@ public abstract class GenerateLuaUtils {
         }
 
         // 生成Protocol.lua文件
-        var protocolManagerTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("lua/ProtocolManagerTemplate.lua")));
+        var protocolManagerTemplate = ClassUtils.getFileFromClassPathToString("lua/ProtocolManagerTemplate.lua");
         var fieldBuilder = new StringBuilder();
         var protocolBuilder = new StringBuilder();
         for (var protocol : protocolList) {
@@ -117,7 +116,7 @@ public abstract class GenerateLuaUtils {
         var protocolId = registration.protocolId();
         var registrationConstructor = registration.getConstructor();
         var protocolClazzName = registrationConstructor.getDeclaringClass().getSimpleName();
-        var protocolTemplate = StringUtils.bytesToString(IOUtils.toByteArray(ClassUtils.getFileFromClassPath("lua/ProtocolTemplate.lua")));
+        var protocolTemplate = ClassUtils.getFileFromClassPathToString("lua/ProtocolTemplate.lua");
 
         var classNote = GenerateProtocolNote.classNote(protocolId, CodeLanguage.Lua);
         var valueOfMethod = valueOfMethod(registration);

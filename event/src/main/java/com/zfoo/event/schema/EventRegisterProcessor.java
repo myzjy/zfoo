@@ -13,12 +13,13 @@
 
 package com.zfoo.event.schema;
 
+import com.zfoo.event.anno.EventReceiver;
+import com.zfoo.event.enhance.EnhanceUtils;
+import com.zfoo.event.enhance.EventReceiverDefinition;
 import com.zfoo.event.manager.EventBus;
-import com.zfoo.event.model.anno.EventReceiver;
-import com.zfoo.event.model.event.IEvent;
-import com.zfoo.event.model.vo.EnhanceUtils;
-import com.zfoo.event.model.vo.EventReceiverDefinition;
+import com.zfoo.event.model.IEvent;
 import com.zfoo.protocol.collection.ArrayUtils;
+import com.zfoo.protocol.util.GraalVmUtils;
 import com.zfoo.protocol.util.ReflectionUtils;
 import com.zfoo.protocol.util.StringUtils;
 import org.slf4j.Logger;
@@ -81,10 +82,12 @@ public class EventRegisterProcessor implements BeanPostProcessor {
 
                 var bus = method.getDeclaredAnnotation(EventReceiver.class).value();
                 var receiverDefinition = new EventReceiverDefinition(bean, method, bus, eventClazz);
-                var enhanceReceiverDefinition = EnhanceUtils.createEventReceiver(receiverDefinition);
-
-                // key:class类型 value:观察者 注册Event的receiverMap中
-                EventBus.registerEventReceiver(eventClazz, enhanceReceiverDefinition);
+                if (GraalVmUtils.isGraalVM()) {
+                    EventBus.registerEventReceiver(eventClazz, receiverDefinition);
+                } else {
+                    // key:class类型 value:观察者 注册Event的receiverMap中
+                    EventBus.registerEventReceiver(eventClazz, EnhanceUtils.createEventReceiver(receiverDefinition));
+                }
             }
         } catch (Throwable t) {
             throw new RuntimeException(t);

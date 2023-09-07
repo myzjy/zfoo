@@ -12,15 +12,14 @@
 
 package com.zfoo.net.router.attachment;
 
-import com.zfoo.util.math.RandomUtils;
+import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
  * @version 3.0
  */
+@Protocol(id = 3)
 public class UdpAttachment implements IAttachment {
-
-    public static final short PROTOCOL_ID = 3;
 
     private String host;
     private int port;
@@ -35,11 +34,6 @@ public class UdpAttachment implements IAttachment {
     @Override
     public AttachmentType packetType() {
         return AttachmentType.UDP_PACKET;
-    }
-
-    @Override
-    public short protocolId() {
-        return PROTOCOL_ID;
     }
 
     public String getHost() {

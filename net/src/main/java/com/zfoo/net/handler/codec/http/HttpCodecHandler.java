@@ -14,16 +14,14 @@ package com.zfoo.net.handler.codec.http;
 
 import com.zfoo.net.packet.DecodedPacketInfo;
 import com.zfoo.net.packet.EncodedPacketInfo;
+import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.packet.common.Message;
 import com.zfoo.net.router.attachment.HttpAttachment;
-import com.zfoo.protocol.IPacket;
 import com.zfoo.protocol.util.JsonUtils;
 import com.zfoo.protocol.util.StringUtils;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.codec.http.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.function.Function;
@@ -55,7 +53,7 @@ public class HttpCodecHandler extends MessageToMessageCodec<FullHttpRequest, Enc
 
         var protocolVersion = attachment.getFullHttpRequest().protocolVersion();
         var httpResponseStatus = attachment.getHttpResponseStatus();
-        if (packet.protocolId() == Message.PROTOCOL_ID) {
+        if (packet.getClass() == Message.class) {
             var message = (Message) packet;
             if (message.fail()) {
                 httpResponseStatus = HttpResponseStatus.BAD_REQUEST;

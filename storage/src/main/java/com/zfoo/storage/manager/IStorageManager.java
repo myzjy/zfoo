@@ -13,8 +13,8 @@
 
 package com.zfoo.storage.manager;
 
-import com.zfoo.storage.model.config.StorageConfig;
-import com.zfoo.storage.model.vo.Storage;
+import com.zfoo.storage.config.StorageConfig;
+import com.zfoo.storage.model.IStorage;
 
 import java.util.Map;
 
@@ -39,11 +39,11 @@ public interface IStorageManager {
      */
     void initAfter();
 
-    Storage<?, ?> getStorage(Class<?> clazz);
+    IStorage<?, ?> getStorage(Class<?> clazz);
 
-    Map<Class<?>, Storage<?, ?>> storageMap();
+    Map<Class<?>, IStorage<?, ?>> storageMap();
 
-    void updateStorage(Class<?> clazz, Storage<?, ?> storage);
+    void updateStorage(Class<?> clazz, IStorage<?, ?> storage);
 
     StorageConfig storageConfig();
 }

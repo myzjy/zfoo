@@ -42,12 +42,12 @@ import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateTsUtils {
 
-    private static String protocolOutputRootPath = "tsProtocol";
-    private static String protocolOutputPath = StringUtils.EMPTY;
+    // custom configuration
+    public static String protocolOutputRootPath = "zfoots";
+    public static String protocolOutputPath = StringUtils.EMPTY;
 
     private static Map<ISerializer, ITsSerializer> tsSerializerMap;
 
@@ -56,16 +56,13 @@ public abstract class GenerateTsUtils {
     }
 
     public static void init(GenerateOperation generateOperation) {
-        // 如果没有配置路径，则使用默认路径
+        // if not specify output path, then use current default path
         if (StringUtils.isEmpty(generateOperation.getProtocolPath())) {
             protocolOutputPath = FileUtils.joinPath(generateOperation.getProtocolPath(), protocolOutputRootPath);
         } else {
             protocolOutputPath = generateOperation.getProtocolPath();
         }
-
         FileUtils.deleteFile(new File(protocolOutputPath));
-        var protocolOutputPathFile = FileUtils.createDirectory(protocolOutputPath);
-        protocolOutputRootPath = protocolOutputPathFile.getName();
 
         tsSerializerMap = new HashMap<>();
         tsSerializerMap.put(BooleanSerializer.INSTANCE, new TsBooleanSerializer());
@@ -75,7 +72,6 @@ public abstract class GenerateTsUtils {
         tsSerializerMap.put(LongSerializer.INSTANCE, new TsLongSerializer());
         tsSerializerMap.put(FloatSerializer.INSTANCE, new TsFloatSerializer());
         tsSerializerMap.put(DoubleSerializer.INSTANCE, new TsDoubleSerializer());
-        tsSerializerMap.put(CharSerializer.INSTANCE, new TsCharSerializer());
         tsSerializerMap.put(StringSerializer.INSTANCE, new TsStringSerializer());
         tsSerializerMap.put(ArraySerializer.INSTANCE, new TsArraySerializer());
         tsSerializerMap.put(ListSerializer.INSTANCE, new TsListSerializer());
@@ -86,6 +82,7 @@ public abstract class GenerateTsUtils {
 
     public static void clear() {
         protocolOutputRootPath = null;
+        protocolOutputPath = null;
         tsSerializerMap = null;
     }
 
@@ -112,7 +109,8 @@ public abstract class GenerateTsUtils {
         }
 
         protocolManagerTemplate = StringUtils.format(protocolManagerTemplate, importBuilder.toString().trim(), initProtocolBuilder.toString().trim());
-        FileUtils.writeStringToFile(new File(StringUtils.format("{}/{}", protocolOutputPath, "ProtocolManager.ts")), protocolManagerTemplate, true);
+        var outputPath = StringUtils.format("{}/{}", protocolOutputPath, "ProtocolManager.ts");
+        FileUtils.writeStringToFile(new File(outputPath), protocolManagerTemplate, true);
     }
 
     public static void createTsProtocolFile(ProtocolRegistration registration) throws IOException {
@@ -133,8 +131,8 @@ public abstract class GenerateTsUtils {
 
         protocolTemplate = StringUtils.format(protocolTemplate, importSubProtocol, classNote, protocolClazzName, fieldDefinition.trim()
                 , protocolId, protocolClazzName, protocolClazzName, writeObject.trim(), protocolClazzName, protocolClazzName, readObject.trim(), protocolClazzName);
-        FileUtils.writeStringToFile(new File(StringUtils.format("{}/{}/{}.ts", protocolOutputPath
-                , GenerateProtocolPath.getProtocolPath(protocolId), protocolClazzName)), protocolTemplate, true);
+        var outputPath = StringUtils.format("{}/{}/{}.ts", protocolOutputPath, GenerateProtocolPath.getProtocolPath(protocolId), protocolClazzName);
+        FileUtils.writeStringToFile(new File(outputPath), protocolTemplate, true);
     }
 
     private static String importSubProtocol(ProtocolRegistration registration) {
@@ -162,10 +160,9 @@ public abstract class GenerateTsUtils {
         var fields = registration.getFields();
         var fieldRegistrations = registration.getFieldRegistrations();
         var fieldDefinitionBuilder = new StringBuilder();
-        var sequencedFields = ReflectionUtils.notStaticAndTransientFields(registration.getConstructor().getDeclaringClass());
-        for (int i = 0; i < sequencedFields.size(); i++) {
-            var field = sequencedFields.get(i);
-            IFieldRegistration fieldRegistration = fieldRegistrations[GenerateProtocolFile.indexOf(fields, field)];
+        for (int i = 0; i < fields.length; i++) {
+            var field = fields[i];
+            IFieldRegistration fieldRegistration = fieldRegistrations[i];
             var fieldName = field.getName();
             // 生成注释
             var fieldNote = GenerateProtocolNote.fieldNote(protocolId, fieldName, CodeLanguage.TypeScript);
@@ -181,38 +178,49 @@ public abstract class GenerateTsUtils {
     private static String writeObject(ProtocolRegistration registration) {
         var fields = registration.getFields();
         var fieldRegistrations = registration.getFieldRegistrations();
-        var jsBuilder = new StringBuilder();
+        var tsBuilder = new StringBuilder();
+        if (registration.isCompatible()) {
+            tsBuilder.append("const beforeWriteIndex = buffer.getWriteOffset();").append(LS);
+            tsBuilder.append(TAB + TAB).append(StringUtils.format("buffer.writeInt({});", registration.getPredictionLength())).append(LS);
+        } else {
+            tsBuilder.append(TAB + TAB).append("buffer.writeInt(-1);").append(LS);
+        }
         for (var i = 0; i < fields.length; i++) {
             var field = fields[i];
             var fieldRegistration = fieldRegistrations[i];
-            tsSerializer(fieldRegistration.serializer()).writeObject(jsBuilder, "packet." + field.getName(), 2, field, fieldRegistration);
+            tsSerializer(fieldRegistration.serializer()).writeObject(tsBuilder, "packet." + field.getName(), 2, field, fieldRegistration);
         }
-        return jsBuilder.toString();
+        if (registration.isCompatible()) {
+            tsBuilder.append(TAB + TAB).append(StringUtils.format("buffer.adjustPadding({}, beforeWriteIndex);", registration.getPredictionLength())).append(LS);
+        }
+        return tsBuilder.toString();
     }
 
     private static String readObject(ProtocolRegistration registration) {
         var fields = registration.getFields();
         var fieldRegistrations = registration.getFieldRegistrations();
-        var jsBuilder = new StringBuilder();
+        var tsBuilder = new StringBuilder();
         for (var i = 0; i < fields.length; i++) {
             var field = fields[i];
             var fieldRegistration = fieldRegistrations[i];
             if (field.isAnnotationPresent(Compatible.class)) {
-                jsBuilder.append(TAB + TAB).append("if (!buffer.isReadable()) {").append(LS);
-                jsBuilder.append(TAB + TAB + TAB).append("return packet;").append(LS);
-                jsBuilder.append(TAB + TAB).append("}").append(LS);
+
+                tsBuilder.append(TAB + TAB).append("if (buffer.compatibleRead(beforeReadIndex, length)) {").append(LS);
+                var compatibleReadObject = tsSerializer(fieldRegistration.serializer()).readObject(tsBuilder, 3, field, fieldRegistration);
+                tsBuilder.append(TAB + TAB+ TAB).append(StringUtils.format("packet.{} = {};", field.getName(), compatibleReadObject)).append(LS);
+                tsBuilder.append(TAB + TAB).append("}").append(LS);
+                continue;
             }
-            var readObject = tsSerializer(fieldRegistration.serializer()).readObject(jsBuilder, 2, field, fieldRegistration);
-            jsBuilder.append(TAB + TAB).append(StringUtils.format("packet.{} = {};", field.getName(), readObject)).append(LS);
+            var readObject = tsSerializer(fieldRegistration.serializer()).readObject(tsBuilder, 2, field, fieldRegistration);
+            tsBuilder.append(TAB + TAB).append(StringUtils.format("packet.{} = {};", field.getName(), readObject)).append(LS);
         }
-        return jsBuilder.toString();
+        return tsBuilder.toString();
     }
 
     public static String toTsClassName(String typeName) {
         typeName = typeName.replaceAll("java.util.|java.lang.", StringUtils.EMPTY);
         typeName = typeName.replaceAll("[a-zA-Z0-9_.]*\\.", StringUtils.EMPTY);
 
-        // CSharp不适用基础类型的泛型，会影响性能
         switch (typeName) {
             case "boolean":
             case "Boolean":

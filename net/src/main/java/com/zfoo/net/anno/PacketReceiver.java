@@ -19,11 +19,11 @@ import java.lang.annotation.*;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 @Reflective
 public @interface PacketReceiver {
+    Task value() default Task.TaskBus;
 }

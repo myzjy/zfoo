@@ -15,7 +15,6 @@ package com.zfoo.net.packet.common;
 
 import com.baidu.bjf.remoting.protobuf.annotation.Protobuf;
 import com.baidu.bjf.remoting.protobuf.annotation.ProtobufClass;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.anno.Protocol;
 import org.slf4j.helpers.FormattingTuple;
@@ -23,11 +22,10 @@ import org.slf4j.helpers.MessageFormatter;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @ProtobufClass
 @Protocol(id = 101)
-public class Error implements IPacket {
+public class Error {
 
     @Protobuf(order = 1)
     private int module;
@@ -51,7 +49,7 @@ public class Error implements IPacket {
         return response;
     }
 
-    public static Error valueOf(IPacket packet, int errorCode, String errorMessage) {
+    public static Error valueOf(Object packet, int errorCode, String errorMessage) {
         Error response = new Error();
         response.module = ProtocolManager.getProtocol(packet.getClass()).module();
         response.errorCode = errorCode;
@@ -59,11 +57,11 @@ public class Error implements IPacket {
         return response;
     }
 
-    public static Error valueOf(IPacket packet, int errorCode) {
+    public static Error valueOf(Object packet, int errorCode) {
         return valueOf(packet, errorCode, null);
     }
 
-    public static Error valueOf(IPacket packet, String errorMessage) {
+    public static Error valueOf(Object packet, String errorMessage) {
         return valueOf(packet, 0, errorMessage);
     }
 

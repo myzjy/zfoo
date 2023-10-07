@@ -23,7 +23,6 @@ import io.netty.buffer.ByteBuf;
  * 只要是protocol都是使用FieldSerializer
  *
  * @author godotg
- * @version 3.0
  */
 public class ObjectProtocolSerializer implements ISerializer {
 
@@ -44,5 +43,15 @@ public class ObjectProtocolSerializer implements ISerializer {
         ObjectProtocolField objectProtocolField = (ObjectProtocolField) fieldRegistration;
         IProtocolRegistration protocol = ProtocolManager.getProtocol(objectProtocolField.getProtocolId());
         return protocol.read(buffer);
+    }
+
+    @Override
+    public Object defaultValue(IFieldRegistration fieldRegistration) {
+        return null;
+    }
+
+    @Override
+    public int predictionLength(IFieldRegistration fieldRegistration) {
+        return 13;
     }
 }

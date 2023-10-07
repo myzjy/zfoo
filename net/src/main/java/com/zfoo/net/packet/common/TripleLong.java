@@ -15,15 +15,13 @@ package com.zfoo.net.packet.common;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 114)
-public class TripleLong implements IPacket {
+public class TripleLong {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private long left;

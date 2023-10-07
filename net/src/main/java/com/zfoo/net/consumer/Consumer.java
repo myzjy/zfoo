@@ -16,7 +16,6 @@ package com.zfoo.net.consumer;
 import com.zfoo.net.NetContext;
 import com.zfoo.net.consumer.balancer.AbstractConsumerLoadBalancer;
 import com.zfoo.net.consumer.balancer.IConsumerLoadBalancer;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.packet.common.Error;
 import com.zfoo.net.router.Router;
 import com.zfoo.net.router.answer.AsyncAnswer;
@@ -26,7 +25,7 @@ import com.zfoo.net.router.attachment.SignalAttachment;
 import com.zfoo.net.router.exception.ErrorResponseException;
 import com.zfoo.net.router.exception.NetTimeOutException;
 import com.zfoo.net.router.exception.UnexpectedProtocolException;
-import com.zfoo.net.router.route.SignalBridge;
+import com.zfoo.net.router.SignalBridge;
 import com.zfoo.net.task.TaskBus;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.collection.CollectionUtils;
@@ -46,7 +45,6 @@ import java.util.concurrent.TimeoutException;
  * 在clientSession中选择一个可用的session，最终还是调用的IRouter中的方法
  *
  * @author godotg
- * @version 3.0
  */
 public class Consumer implements IConsumer {
 
@@ -72,7 +70,7 @@ public class Consumer implements IConsumer {
     }
 
     @Override
-    public void send(IPacket packet, Object argument) {
+    public void send(Object packet, Object argument) {
         try {
             var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocol(packet.getClass()));
             var session = loadBalancer.loadBalancer(packet, argument);
@@ -84,7 +82,7 @@ public class Consumer implements IConsumer {
     }
 
     @Override
-    public <T extends IPacket> SyncAnswer<T> syncAsk(IPacket packet, Class<T> answerClass, Object argument) throws Exception {
+    public <T> SyncAnswer<T> syncAsk(Object packet, Class<T> answerClass, Object argument) throws Exception {
         var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocol(packet.getClass()));
         var session = loadBalancer.loadBalancer(packet, argument);
 
@@ -102,7 +100,7 @@ public class Consumer implements IConsumer {
 
             NetContext.getRouter().send(session, packet, clientSignalAttachment);
 
-            IPacket responsePacket = clientSignalAttachment.getResponseFuture().get(Router.DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
+            Object responsePacket = clientSignalAttachment.getResponseFuture().get(Router.DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
 
             if (responsePacket.getClass() == Error.class) {
                 throw new ErrorResponseException((Error) responsePacket);
@@ -110,6 +108,7 @@ public class Consumer implements IConsumer {
             if (answerClass != null && answerClass != responsePacket.getClass()) {
                 throw new UnexpectedProtocolException("client expect protocol:[{}], but found protocol:[{}]", answerClass, responsePacket.getClass().getName());
             }
+            @SuppressWarnings("unchecked")
             var syncAnswer = new SyncAnswer<>((T) responsePacket, clientSignalAttachment);
 
             // load balancer之后调用
@@ -123,7 +122,7 @@ public class Consumer implements IConsumer {
     }
 
     @Override
-    public <T extends IPacket> AsyncAnswer<T> asyncAsk(IPacket packet, Class<T> answerClass, Object argument) {
+    public <T> AsyncAnswer<T> asyncAsk(Object packet, Class<T> answerClass, Object argument) {
         var loadBalancer = loadBalancer(ProtocolManager.moduleByProtocol(packet.getClass()));
         var session = loadBalancer.loadBalancer(packet, argument);
         var asyncAnswer = NetContext.getRouter().asyncAsk(session, packet, answerClass, argument);

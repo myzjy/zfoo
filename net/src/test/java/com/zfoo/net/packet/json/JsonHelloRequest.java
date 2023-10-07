@@ -12,15 +12,13 @@
 
 package com.zfoo.net.packet.json;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1600)
-public class JsonHelloRequest implements IPacket {
+public class JsonHelloRequest {
 
     private String message;
 

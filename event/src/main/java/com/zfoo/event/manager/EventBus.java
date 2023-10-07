@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class EventBus {
 
@@ -102,15 +101,9 @@ public abstract class EventBus {
         }
         for (var receiver : receivers) {
             switch (receiver.bus()) {
-                case CurrentThread:
-                    doReceiver(receiver, event);
-                    break;
-                case AsyncThread:
-                    execute(event.executorHash(), () -> doReceiver(receiver, event));
-                    break;
-                case VirtualThread:
-                    logger.error("waiting for java 21 virtual thread");
-                    break;
+                case CurrentThread -> doReceiver(receiver, event);
+                case AsyncThread -> execute(event.executorHash(), () -> doReceiver(receiver, event));
+//                case VirtualThread -> Thread.ofVirtual().name("virtual-on" + clazz.getSimpleName()).start(() -> doReceiver(receiver, event));
             }
         }
     }

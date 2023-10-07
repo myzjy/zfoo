@@ -13,17 +13,15 @@
 
 package com.zfoo.net.core.gateway.model;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * 网关登录成功过后，将uid授权给网关
  *
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 20)
-public class AuthUidToGatewayCheck implements IPacket {
+public class AuthUidToGatewayCheck {
 
     private long uid;
 

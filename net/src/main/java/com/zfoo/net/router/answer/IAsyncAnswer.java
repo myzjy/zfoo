@@ -13,15 +13,13 @@
 
 package com.zfoo.net.router.answer;
 
-import com.zfoo.net.packet.IPacket;
 
 import java.util.function.Consumer;
 
 /**
  * @author godotg
- * @version 3.0
  */
-public interface IAsyncAnswer<T extends IPacket> {
+public interface IAsyncAnswer<T> {
 
     IAsyncAnswer<T> thenAccept(Consumer<T> consumer);
 

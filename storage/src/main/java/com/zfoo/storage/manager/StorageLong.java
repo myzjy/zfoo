@@ -21,7 +21,6 @@ import java.util.Map;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class StorageLong<K, V> extends StorageObject<K, V> {
 
@@ -29,7 +28,9 @@ public class StorageLong<K, V> extends StorageObject<K, V> {
 
     public StorageLong(StorageObject<K, V> storage) {
         this.dataMap = new LongObjectHashMap<V>(storage.size());
-        this.dataMap.putAll((Map<? extends Long, ? extends V>) storage.getData());
+        @SuppressWarnings("unchecked")
+        var map = (Map<? extends Long, ? extends V>) storage.getData();
+        this.dataMap.putAll(map);
         super.indexMap = storage.indexMap;
         super.uniqueIndexMap = storage.uniqueIndexMap;
         super.clazz = storage.clazz;
@@ -40,18 +41,18 @@ public class StorageLong<K, V> extends StorageObject<K, V> {
     }
 
     @Override
-    public boolean contain(K key) {
-        return contain((long) key);
+    public boolean contain(K id) {
+        return contain((long) id);
     }
 
     @Override
-    public boolean contain(int key) {
-        return contain((long) key);
+    public boolean contain(int id) {
+        return contain((long) id);
     }
 
     @Override
-    public boolean contain(long key) {
-        return dataMap.containsKey(key);
+    public boolean contain(long id) {
+        return dataMap.containsKey(id);
     }
 
     @Override
@@ -84,12 +85,14 @@ public class StorageLong<K, V> extends StorageObject<K, V> {
 
     @Override
     public Collection<V> getAll() {
-        return dataMap.values();
+        return dataMap.values().stream().toList();
     }
 
     @Override
     public Map<K, V> getData() {
-        return (Map<K, V>) Collections.unmodifiableMap(dataMap);
+        @SuppressWarnings("unchecked")
+        var map = (Map<K, V>) Collections.unmodifiableMap(dataMap);
+        return map;
     }
 
 }

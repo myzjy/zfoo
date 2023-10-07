@@ -13,8 +13,7 @@
 package com.zfoo.net.packet;
 
 import com.zfoo.net.NetContext;
-import com.zfoo.net.router.attachment.IAttachment;
-import com.zfoo.net.router.route.PacketBus;
+import com.zfoo.net.router.attachment.SignalAttachment;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.buffer.ByteBufUtils;
 import com.zfoo.protocol.collection.CollectionUtils;
@@ -41,7 +40,6 @@ import java.util.function.Predicate;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class PacketService implements IPacketService {
 
@@ -71,11 +69,16 @@ public class PacketService implements IPacketService {
 
     public static final String NET_COMMON_MODULE = "common";
 
-    private final Predicate<IProtocolRegistration> netGenerateProtocolFilter = registration
-            -> ProtocolManager.moduleByModuleId(registration.module()).getName().matches(NET_COMMON_MODULE)
-            || registration.protocolConstructor().getDeclaringClass().getSimpleName().endsWith(NET_REQUEST_SUFFIX)
-            || registration.protocolConstructor().getDeclaringClass().getSimpleName().endsWith(NET_RESPONSE_SUFFIX)
-            || registration.protocolConstructor().getDeclaringClass().getSimpleName().endsWith(NET_NOTICE_SUFFIX);
+    private final Predicate<IProtocolRegistration> netGenerateProtocolFilter = it -> {
+        var clazz = it.protocolConstructor().getDeclaringClass();
+        var className = clazz.getSimpleName();
+        var module = ProtocolManager.moduleByModuleId(it.module());
+        return clazz == SignalAttachment.class
+                || className.endsWith(NET_REQUEST_SUFFIX)
+                || className.endsWith(NET_RESPONSE_SUFFIX)
+                || className.endsWith(NET_NOTICE_SUFFIX)
+                || module.getName().matches(NET_COMMON_MODULE);
+    };
 
     public PacketService() {
 
@@ -117,7 +120,7 @@ public class PacketService implements IPacketService {
         // 注册协议接收器
         var componentBeans = applicationContext.getBeansWithAnnotation(Component.class);
         for (var bean : componentBeans.values()) {
-            PacketBus.registerPacketReceiverDefinition(bean);
+            NetContext.getRouter().registerPacketReceiverDefinition(bean);
         }
     }
 
@@ -149,12 +152,12 @@ public class PacketService implements IPacketService {
         var packet = ProtocolManager.read(buffer);
         // 解析包的附加包
         var hasAttachment = ByteBufUtils.tryReadBoolean(buffer);
-        var attachment = hasAttachment ? ((IAttachment) ProtocolManager.read(buffer)) : null;
-        return DecodedPacketInfo.valueOf((IPacket) packet, attachment);
+        var attachment = hasAttachment ? (ProtocolManager.read(buffer)) : null;
+        return DecodedPacketInfo.valueOf(packet, attachment);
     }
 
     @Override
-    public void write(ByteBuf buffer, IPacket packet, IAttachment attachment) {
+    public void write(ByteBuf buffer, Object packet, Object attachment) {
 
         if (packet == null) {
             logger.error("packet is null and can not be sent.");

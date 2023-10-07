@@ -13,15 +13,13 @@
 
 package com.zfoo.net.packet.common;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 112)
-public class PairString implements IPacket {
+public class PairString {
 
     private String key;
 

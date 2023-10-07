@@ -13,14 +13,12 @@
 
 package com.zfoo.net.consumer.balancer;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.router.attachment.SignalAttachment;
 import com.zfoo.net.session.Session;
 import org.springframework.lang.Nullable;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public interface IConsumerLoadBalancer {
 
@@ -31,12 +29,12 @@ public interface IConsumerLoadBalancer {
      * @param argument 计算参数
      * @return 一个服务提供者的session
      */
-    Session loadBalancer(IPacket packet, @Nullable Object argument);
+    Session loadBalancer(Object packet, @Nullable Object argument);
 
-    default void beforeLoadBalancer(Session session, IPacket packet, SignalAttachment attachment) {
+    default void beforeLoadBalancer(Session session, Object packet, SignalAttachment attachment) {
     }
 
-    default void afterLoadBalancer(Session session, IPacket packet, SignalAttachment attachment) {
+    default void afterLoadBalancer(Session session, Object packet, SignalAttachment attachment) {
     }
 
 }

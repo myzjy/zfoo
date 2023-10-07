@@ -16,7 +16,6 @@ import java.lang.annotation.*;
 
 /**
  * @author meiw
- * @version 3.0
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -27,6 +26,5 @@ public @interface Protocol {
 
     boolean enhance() default true;
 
-    String note() default "";
 }
 

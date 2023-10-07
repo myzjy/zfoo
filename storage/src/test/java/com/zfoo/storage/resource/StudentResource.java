@@ -22,7 +22,6 @@ import java.util.List;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Storage
 public class StudentResource {
@@ -35,7 +34,7 @@ public class StudentResource {
      */
     @Index
     private String name;
-
+    @Index
     @AliasFieldName("年龄")
     private int age;
     private float score;

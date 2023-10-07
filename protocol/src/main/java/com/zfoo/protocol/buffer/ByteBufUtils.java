@@ -32,10 +32,43 @@ import java.util.Set;
  * “可变长字节码算法”的压缩数据的算法，压缩数据和减少磁盘IO。google的ProtocolBuf和Facebook的thrift底层的通信协议都是由这个算法实现
  *
  * @author godotg
- * @version 3.0
  */
 public abstract class ByteBufUtils {
 
+    //---------------------------------compatible--------------------------------------
+    public static final Double ZERO_DOUBLE = Double.valueOf(0D);
+    public static final Float ZERO_FLOAT = Float.valueOf(0F);
+
+    public static void adjustPadding(ByteBuf byteBuf, int predictionLength, int beforeWriteIndex) {
+        // 因为写入的是可变长的int，如果预留的位置过多，则清除多余的位置
+        var currentWriteIndex = byteBuf.writerIndex();
+        var predictionCount = writeIntCount(predictionLength);
+        var length = currentWriteIndex - beforeWriteIndex - predictionCount;
+        var lengthCount = writeIntCount(length);
+        var padding = lengthCount - predictionCount;
+        if (padding == 0) {
+            byteBuf.writerIndex(beforeWriteIndex);
+            writeInt(byteBuf, length);
+            byteBuf.writerIndex(currentWriteIndex);
+        } else if (padding < 0) {
+            var retainedByteBuf = byteBuf.retainedSlice(currentWriteIndex - length, length);
+            byteBuf.writerIndex(beforeWriteIndex);
+            writeInt(byteBuf, length);
+            byteBuf.writeBytes(retainedByteBuf);
+            ReferenceCountUtil.release(retainedByteBuf);
+        } else {
+            var retainedByteBuf = byteBuf.retainedSlice(currentWriteIndex - length, length);
+            var bytes = readAllBytes(retainedByteBuf);
+            byteBuf.writerIndex(beforeWriteIndex);
+            writeInt(byteBuf, length);
+            byteBuf.writeBytes(bytes);
+            ReferenceCountUtil.release(retainedByteBuf);
+        }
+    }
+
+    public static boolean compatibleRead(ByteBuf byteBuf, int beforeReadIndex, int length) {
+        return length != -1 && byteBuf.readerIndex() < length + beforeReadIndex;
+    }
 
     //---------------------------------boolean--------------------------------------
     public static void writeBoolean(ByteBuf byteBuf, boolean value) {
@@ -169,7 +202,7 @@ public abstract class ByteBufUtils {
     }
 
 
-    private static int writeIntCount(int value) {
+    public static int writeIntCount(int value) {
         value = (value << 1) ^ (value >> 31);
 
         if (value >>> 7 == 0) {
@@ -344,6 +377,7 @@ public abstract class ByteBufUtils {
         }
 
         // 预估需要写入的字节数，并预留位置
+        var beforeWriteIndex = byteBuf.writerIndex();
         var maxLength = ByteBufUtil.utf8MaxBytes(value);
         var writeIntCountByte = writeInt(byteBuf, maxLength);
 
@@ -354,12 +388,12 @@ public abstract class ByteBufUtils {
         // 因为写入的是可变长的int，如果预留的位置过多，则清除多余的位置
         var padding = writeIntCountByte - writeIntCount(length);
         if (padding == 0) {
-            byteBuf.writerIndex(currentWriteIndex - length - writeIntCountByte);
+            byteBuf.writerIndex(beforeWriteIndex);
             writeInt(byteBuf, length);
             byteBuf.writerIndex(currentWriteIndex);
         } else {
             var retainedByteBuf = byteBuf.retainedSlice(currentWriteIndex - length, length);
-            byteBuf.writerIndex(currentWriteIndex - length - writeIntCountByte);
+            byteBuf.writerIndex(beforeWriteIndex);
             writeInt(byteBuf, length);
             byteBuf.writeBytes(retainedByteBuf);
             ReferenceCountUtil.release(retainedByteBuf);
@@ -396,12 +430,6 @@ public abstract class ByteBufUtils {
 
     //-----------------------------------------------------------------------
     //---------------------------------以下方法会被字节码生成的代码调用--------------------------------------
-    public static boolean writePacketFlag(ByteBuf byteBuf, Object packet) {
-        boolean flag = packet == null;
-        byteBuf.writeBoolean(!flag);
-        return flag;
-    }
-
     public static void writePacketCollection(ByteBuf byteBuf, Collection<?> collection, IProtocolRegistration protocolRegistration) {
         if (collection == null) {
             byteBuf.writeByte(0);

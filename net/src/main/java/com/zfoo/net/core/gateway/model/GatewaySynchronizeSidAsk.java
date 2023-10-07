@@ -13,7 +13,6 @@
 
 package com.zfoo.net.core.gateway.model;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 import java.util.Map;
@@ -22,10 +21,9 @@ import java.util.Map;
  * 同步网关的session信息到push
  *
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 24)
-public class GatewaySynchronizeSidAsk implements IPacket {
+public class GatewaySynchronizeSidAsk {
 
     private String gatewayHostAndPort;
 

@@ -24,14 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.in;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class MongodbAccessor implements IAccessor {
 
@@ -40,6 +38,7 @@ public class MongodbAccessor implements IAccessor {
 
     @Override
     public <E extends IEntity<?>> boolean insert(E entity) {
+        @SuppressWarnings("unchecked")
         var entityClazz = (Class<E>) entity.getClass();
         var collection = OrmContext.getOrmManager().getCollection(entityClazz);
         var result = collection.insertOne(entity);
@@ -51,6 +50,7 @@ public class MongodbAccessor implements IAccessor {
         if (CollectionUtils.isEmpty(entities)) {
             return;
         }
+        @SuppressWarnings("unchecked")
         var entityClazz = (Class<E>) entities.get(0).getClass();
         var collection = OrmContext.getOrmManager().getCollection(entityClazz);
         collection.insertMany(entities);
@@ -59,6 +59,7 @@ public class MongodbAccessor implements IAccessor {
     @Override
     public <E extends IEntity<?>> boolean update(E entity) {
         try {
+            @SuppressWarnings("unchecked")
             var entityClazz = (Class<E>) entity.getClass();
             var collection = OrmContext.getOrmManager().getCollection(entityClazz);
 
@@ -83,12 +84,13 @@ public class MongodbAccessor implements IAccessor {
         }
 
         try {
+            @SuppressWarnings("unchecked")
             var entityClazz = (Class<E>) entities.get(0).getClass();
             var collection = OrmContext.getOrmManager().getCollection(entityClazz);
 
             var batchList = entities.stream()
                     .map(it -> new ReplaceOneModel<E>(Filters.eq("_id", it.id()), it))
-                    .collect(Collectors.toList());
+                    .toList();
 
             var result = collection.bulkWrite(batchList, new BulkWriteOptions().ordered(false));
             if (result.getModifiedCount() != entities.size()) {
@@ -102,6 +104,7 @@ public class MongodbAccessor implements IAccessor {
 
     @Override
     public <E extends IEntity<?>> boolean delete(E entity) {
+        @SuppressWarnings("unchecked")
         var entityClazz = (Class<E>) entity.getClass();
         var collection = OrmContext.getOrmManager().getCollection(entityClazz);
         var result = collection.deleteOne(eq("_id", entity.id()));
@@ -120,9 +123,10 @@ public class MongodbAccessor implements IAccessor {
         if (CollectionUtils.isEmpty(entities)) {
             return;
         }
+        @SuppressWarnings("unchecked")
         var entityClazz = (Class<E>) entities.get(0).getClass();
         var collection = OrmContext.getOrmManager().getCollection(entityClazz);
-        var ids = entities.stream().map(it -> (it).id()).collect(Collectors.toList());
+        var ids = entities.stream().map(it -> (it).id()).toList();
         collection.deleteMany(in("_id", ids));
     }
 

@@ -18,7 +18,6 @@ import com.zfoo.net.core.HostAndPort;
 import com.zfoo.net.handler.GatewayRouteHandler;
 import com.zfoo.net.handler.codec.websocket.WebSocketCodecHandler;
 import com.zfoo.net.handler.idle.ServerIdleHandler;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.session.Session;
 import com.zfoo.protocol.util.IOUtils;
 import io.netty.channel.socket.SocketChannel;
@@ -33,13 +32,12 @@ import java.util.function.BiFunction;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class WebsocketGatewayServer extends AbstractServer<SocketChannel> {
 
-    private BiFunction<Session, IPacket, Boolean> packetFilter;
+    private BiFunction<Session, Object, Boolean> packetFilter;
 
-    public WebsocketGatewayServer(HostAndPort host, @Nullable BiFunction<Session, IPacket, Boolean> packetFilter) {
+    public WebsocketGatewayServer(HostAndPort host, @Nullable BiFunction<Session, Object, Boolean> packetFilter) {
         super(host);
         this.packetFilter = packetFilter;
     }

@@ -26,7 +26,6 @@ import java.util.Map;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class EnhanceMapSerializer implements IEnhanceSerializer {
 
@@ -89,6 +88,14 @@ public class EnhanceMapSerializer implements IEnhanceSerializer {
         var valueObject = EnhanceUtils.enhanceSerializer(valueRegistration.serializer()).readObject(builder, field, valueRegistration);
 
         builder.append(StringUtils.format("{}.put({},{});}", map, keyObject, valueObject));
+        return map;
+    }
+
+    @Override
+    public String defaultValue(StringBuilder builder, Field field, IFieldRegistration fieldRegistration) {
+        var mapField = (MapField) fieldRegistration;
+        var map = "map" + GenerateProtocolFile.index.getAndIncrement();
+        builder.append(StringUtils.format("Map {} = CollectionUtils.newMap(0);", map));
         return map;
     }
 

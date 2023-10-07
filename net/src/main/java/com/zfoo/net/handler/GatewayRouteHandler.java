@@ -19,12 +19,11 @@ import com.zfoo.net.consumer.balancer.ConsistentHashConsumerLoadBalancer;
 import com.zfoo.net.core.gateway.IGatewayLoadBalancer;
 import com.zfoo.net.core.gateway.model.GatewaySessionInactiveEvent;
 import com.zfoo.net.packet.DecodedPacketInfo;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.packet.common.Heartbeat;
 import com.zfoo.net.packet.common.Ping;
 import com.zfoo.net.packet.common.Pong;
 import com.zfoo.net.router.attachment.GatewayAttachment;
-import com.zfoo.net.router.attachment.IAttachment;
+import com.zfoo.net.router.attachment.SignalAttachment;
 import com.zfoo.net.session.Session;
 import com.zfoo.net.util.SessionUtils;
 import com.zfoo.protocol.util.JsonUtils;
@@ -41,18 +40,17 @@ import java.util.function.BiFunction;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @ChannelHandler.Sharable
 public class GatewayRouteHandler extends ServerRouteHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GatewayRouteHandler.class);
 
-    public static final BiFunction<Session, IPacket, Boolean> DEFAULT_PACKER_FILTER = (session, packet) -> Boolean.FALSE;
+    public static final BiFunction<Session, Object, Boolean> DEFAULT_PACKER_FILTER = (session, packet) -> Boolean.FALSE;
 
-    private final BiFunction<Session, IPacket, Boolean> packetFilter;
+    private final BiFunction<Session, Object, Boolean> packetFilter;
 
-    public GatewayRouteHandler(@Nullable BiFunction<Session, IPacket, Boolean> packetFilter) {
+    public GatewayRouteHandler(@Nullable BiFunction<Session, Object, Boolean> packetFilter) {
         this.packetFilter = Objects.requireNonNullElse(packetFilter, DEFAULT_PACKER_FILTER);
     }
 
@@ -83,13 +81,17 @@ public class GatewayRouteHandler extends ServerRouteHandler {
 
         // 把客户端信息包装为一个GatewayAttachment,因此通过这个网关附加包可以得到玩家的uid、sid之类的信息
         var gatewayAttachment = new GatewayAttachment(session);
-        gatewayAttachment.wrapAttachment(decodedPacketInfo.getAttachment());
+        var signalAttachment = (SignalAttachment) decodedPacketInfo.getAttachment();
+        if (signalAttachment != null) {
+            signalAttachment.setClient(SignalAttachment.SIGNAL_SERVER);
+            gatewayAttachment.setSignalAttachment(signalAttachment);
+        }
 
         // 网关优先使用IGatewayLoadBalancer作为一致性hash的计算参数，然后才会使用客户端的session做参数
         // 例子：以聊天服务来说，玩家知道自己在哪个群组groupId中，那往这个群发送消息时，会在Packet中带上这个groupId做为一致性hash就可以了。
         if (packet instanceof IGatewayLoadBalancer) {
             var loadBalancerConsistentHashObject = ((IGatewayLoadBalancer) packet).loadBalancerConsistentHashObject();
-            gatewayAttachment.wrapTaskExecutorHash(loadBalancerConsistentHashObject);
+            gatewayAttachment.setTaskExecutorHash(loadBalancerConsistentHashObject.hashCode());
             forwardingPacket(packet, gatewayAttachment, loadBalancerConsistentHashObject);
             return;
         } else {
@@ -110,7 +112,7 @@ public class GatewayRouteHandler extends ServerRouteHandler {
     /**
      * 转发网关收到的包到Provider
      */
-    private void forwardingPacket(IPacket packet, IAttachment attachment, Object argument) {
+    private void forwardingPacket(Object packet, Object attachment, Object argument) {
         try {
             var consumerSession = ConsistentHashConsumerLoadBalancer.getInstance().loadBalancer(packet, argument);
             NetContext.getRouter().send(consumerSession, packet, attachment);

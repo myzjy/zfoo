@@ -13,7 +13,6 @@
 
 package com.zfoo.net.consumer.balancer;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.session.Session;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.exception.RunException;
@@ -23,7 +22,6 @@ import com.zfoo.protocol.util.RandomUtils;
  * 随机负载均衡器，任选服务提供者的其中之一
  *
  * @author godotg
- * @version 3.0
  */
 public class RandomConsumerLoadBalancer extends AbstractConsumerLoadBalancer {
 
@@ -37,7 +35,7 @@ public class RandomConsumerLoadBalancer extends AbstractConsumerLoadBalancer {
     }
 
     @Override
-    public Session loadBalancer(IPacket packet, Object argument) {
+    public Session loadBalancer(Object packet, Object argument) {
         var module = ProtocolManager.moduleByProtocol(packet.getClass());
         var sessions = getSessionsByModule(module);
 

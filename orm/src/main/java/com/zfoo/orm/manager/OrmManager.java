@@ -53,12 +53,10 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class OrmManager implements IOrmManager {
 
@@ -89,6 +87,7 @@ public class OrmManager implements IOrmManager {
         var entityDefMap = entityClass();
 
         for (var entityDef : entityDefMap.values()) {
+            @SuppressWarnings("rawtypes")
             var entityCaches = new EntityCache(entityDef);
             entityCachesMap.put(entityDef.getClazz(), entityCaches);
             allEntityCachesUsableMap.put(entityDef.getClazz(), false);
@@ -109,11 +108,11 @@ public class OrmManager implements IOrmManager {
                     .stream()
                     .map(it -> it.split(StringUtils.COMMA_REGEX))
                     .flatMap(it -> Arrays.stream(it))
-                    .map(it -> StringUtils.trim(it))
                     .filter(it -> StringUtils.isNotBlank(it))
+                    .map(it -> StringUtils.trim(it))
                     .map(it -> it.split(StringUtils.COLON_REGEX))
                     .map(it -> new ServerAddress(it[0], Integer.parseInt(it[1])))
-                    .collect(Collectors.toList());
+                    .toList();
             mongoBuilder.applyToClusterSettings(builder -> builder.hosts(hostList));
         }
 
@@ -198,7 +197,8 @@ public class OrmManager implements IOrmManager {
                         }
 
                         Type[] types = ((ParameterizedType) type).getActualTypeArguments();
-                        Class<? extends IEntity<?>> entityClazz = (Class<? extends IEntity<?>>) types[1];
+                        @SuppressWarnings("unchecked")
+                        var entityClazz = (Class<? extends IEntity<?>>) types[1];
                         IEntityCache<?, ?> entityCaches = entityCachesMap.get(entityClazz);
 
                         if (entityCaches == null) {
@@ -234,7 +234,9 @@ public class OrmManager implements IOrmManager {
         if (!usable) {
             throw new RunException("Orm没有使用[]的EntityCaches，为了节省内存提前释放了它；只有使用EntityCachesInjection注解的Entity才能被动态获取", clazz.getCanonicalName());
         }
-        return (IEntityCache<?, E>) entityCachesMap.get(clazz);
+        @SuppressWarnings("unchecked")
+        var entityCache = (IEntityCache<?, E>) entityCachesMap.get(clazz);
+        return entityCache;
     }
 
     @Override
@@ -267,7 +269,7 @@ public class OrmManager implements IOrmManager {
                     .values()
                     .stream()
                     .map(it -> it.getClass())
-                    .collect(Collectors.toList());
+                    .toList();
             classSet.addAll(classes);
         } else {
             var classes = scanEntityCacheAnno();
@@ -276,8 +278,10 @@ public class OrmManager implements IOrmManager {
 
         var cacheDefMap = new HashMap<Class<? extends IEntity<?>>, EntityDef>();
         for (var clazz : classSet) {
-            var cacheDef = parserEntityDef((Class<? extends IEntity<?>>) clazz);
-            cacheDefMap.putIfAbsent((Class<? extends IEntity<?>>) clazz, cacheDef);
+            @SuppressWarnings("unchecked")
+            var entityClass = (Class<? extends IEntity<?>>) clazz;
+            var cacheDef = parserEntityDef(entityClass);
+            cacheDefMap.putIfAbsent(entityClass, cacheDef);
         }
         return cacheDefMap;
     }
@@ -370,34 +374,7 @@ public class OrmManager implements IOrmManager {
         AssertionUtils.notNull(clazz.getAnnotation(com.zfoo.orm.anno.EntityCache.class), "实体类Entity[{}]必须被注解[{}]标注", clazz.getCanonicalName(), com.zfoo.orm.anno.EntityCache.class.getName());
 
         // 校验entity格式
-        var entitySubClassMap = new HashMap<Class<?>, Set<Class<?>>>();
         checkEntity(clazz);
-        // 对象循环引用检测
-        for (var entry : entitySubClassMap.entrySet()) {
-            var subClass = entry.getKey();
-            var subClassSet = entry.getValue();
-            if (subClassSet.contains(subClass)) {
-                throw new RunException("ORM[class:{}]在第一层包含循环引用对象[class:{}]", clazz.getSimpleName(), subClass.getSimpleName());
-            }
-
-            var queue = new LinkedList<>(subClassSet);
-            var allSubClassSet = new HashSet<>(queue);
-            while (!queue.isEmpty()) {
-                var firstSubClass = queue.poll();
-                if (entitySubClassMap.containsKey(firstSubClass)) {
-                    for (var elementClass : entitySubClassMap.get(firstSubClass)) {
-                        if (subClass.equals(elementClass)) {
-                            throw new RunException("ORM[class:{}]在下层对象[class:{}]包含循环引用对象[class:{}]", clazz.getSimpleName(), elementClass.getSimpleName(), elementClass.getSimpleName());
-                        }
-
-                        if (!allSubClassSet.contains(elementClass)) {
-                            allSubClassSet.add(elementClass);
-                            queue.offer(elementClass);
-                        }
-                    }
-                }
-            }
-        }
 
         // 校验id字段和id()方法的格式
         var idFields = ReflectionUtils.getFieldsByAnnoInPOJOClass(clazz, Id.class);
@@ -480,8 +457,8 @@ public class OrmManager implements IOrmManager {
 
         for (var field : filedList) {
             // entity必须包含属性的get和set方法
-            ReflectionUtils.fieldToGetMethod(clazz, field);
-            ReflectionUtils.fieldToSetMethod(clazz, field);
+            FieldUtils.fieldToGetMethod(clazz, field);
+            FieldUtils.fieldToSetMethod(clazz, field);
 
             // 是一个基本类型变量
             var fieldType = field.getType();

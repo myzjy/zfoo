@@ -42,7 +42,6 @@ import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateProtobufUtils {
 
@@ -284,8 +283,6 @@ public abstract class GenerateProtobufUtils {
                 return "float";
             } else if (serializer instanceof DoubleSerializer) {
                 return "double";
-            } else if (serializer instanceof CharSerializer) {
-                return "char";
             } else if (serializer instanceof StringSerializer) {
                 return "string";
             }

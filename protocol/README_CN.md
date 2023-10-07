@@ -3,7 +3,7 @@
 ### Ⅰ. 简介
 
 - [zfoo protocol](https://github.com/zfoo-project/zfoo/blob/main/protocol/README.md)
-  是目前的Java二进制序列化和反序列化速度最快的框架，并且为序列化字节最少的框架
+  是极致性能的Java二进制序列化和反序列化的框架，并且为序列化字节最少的框架
 - 协议目前原生支持 **C++ Java Javascript C# Go Lua GDScript Python**，可以轻易实现跨平台
 - 协议可以自定义私有协议格式，让你的协议更加安全，支持增加字段和兼容前后版本协议
 - 兼容protobuf，支持生成protobuf协议文件，提供从pojo到proto的生成方式
@@ -11,7 +11,7 @@
 
 ### Ⅱ. 快速使用
 
-- 环境要求 **JDK 11+**，可以在 **OpenJDK** 和 **Oracle JDK** 无缝切换
+- 环境要求**JDK 17+**，支持**OpenJDK**, **Oracle JDK**, **native GraalVM**
 
 - protocol是独立项目，不依赖其它项目，可以直接打开，本地install到自己的本地maven仓库，即可单独使用
 
@@ -28,9 +28,9 @@ var packet = ProtocolManager.read(buffer);
 
 ### Ⅲ. 性能测试
 
-- 单线程环境，在没有任何JVM参数调优的情况下速度比Protobuf快50%，比Kryo快100%，[参见性能测试](src/test/java/com/zfoo/protocol/SpeedTest.java)
+- 单线程环境，在没有任何JVM参数调优的情况下速度比Protobuf快50%，比Kryo快100%，[参见性能测试](src/test/java/com/zfoo/protocol/BenchmarkTesting.java)
 
-- 线程安全，zfoo和Protobuf的性能不受任何影响，kryo因为线程不安全性能会有所损失，[参见性能测试](src/test/java/com/zfoo/protocol/SpeedTest.java)
+- 线程安全，zfoo和Protobuf的性能不受任何影响，kryo因为线程不安全性能会有所损失，[参见性能测试](src/test/java/com/zfoo/protocol/BenchmarkTesting.java)
 
 
 - 测试环境
@@ -99,14 +99,6 @@ cpu： i9900k
 
 - 协议类必须是简单的javabean，不能继承任何其它的类，但是可以继承接口
 
-- 为了防止代码里Object满天飞，避免协议层和po层混用对象造成一些潜在的并发问题，zfoo强制要求协议类必须实现IPacket接口
-
-```
-现在IPacket的接口只是一个标识接口，继承IPacket的设计主要是为了让代码更优雅，容易理解一点，改为只继承Object也并没有很大工作量
-
-继承IPacket的设计还有跨语言层面上的考虑，极大的简化了实现其它语言的序列化和反序列化难度，统一了其它语言的代码实现
-```
-
 - 协议号定义为short类型是为了减少包体积和内存大小，一个包可以减少2个byte，每个协议的在应用内存也可以降低6byte（protocols +
   IProtocolRegistration + protocolIdMap）
 
@@ -118,7 +110,7 @@ cpu： i9900k
     - 第一种使用注解：@Protocol(id = protocolId)
       ```
       @Protocol(id = 104)
-      public class SimpleObject implements IPacket {
+      public class SimpleObject {
       
           public int c;
           public boolean g;
@@ -128,7 +120,7 @@ cpu： i9900k
 
     - 第二种使用：通过ProtocolManager.initProtocolAuto()去注册协议就可以不写协议号
       ```
-      public class SimpleObject implements IPacket {
+      public class SimpleObject {
       
           public int c;
       

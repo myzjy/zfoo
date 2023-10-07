@@ -19,10 +19,9 @@ import java.util.Objects;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1112)
-public class CM_Float implements IPacket {
+public class CM_Float {
 
     private float a;
 

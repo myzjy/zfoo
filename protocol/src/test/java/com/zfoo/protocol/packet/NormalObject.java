@@ -14,6 +14,7 @@
 package com.zfoo.protocol.packet;
 
 
+import com.zfoo.protocol.anno.Compatible;
 import com.zfoo.protocol.anno.Protocol;
 
 import java.util.List;
@@ -22,7 +23,6 @@ import java.util.Set;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 101)
 public class NormalObject {
@@ -57,6 +57,11 @@ public class NormalObject {
 
     private Set<Integer> s;
     private Set<String> ssss;
+
+//    @Compatible(1)
+//    public int outCompatibleValue;
+//    @Compatible(2)
+//    public int outCompatibleValue2;
 
     public byte getA() {
         return a;

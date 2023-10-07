@@ -22,7 +22,6 @@ import java.lang.reflect.Field;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class EnhanceStringSerializer implements IEnhanceSerializer {
 
@@ -35,6 +34,13 @@ public class EnhanceStringSerializer implements IEnhanceSerializer {
     public String readObject(StringBuilder builder, Field field, IFieldRegistration fieldRegistration) {
         var result = "result" + GenerateProtocolFile.index.getAndIncrement();
         builder.append(StringUtils.format("String {} = {}.readString($1);", result, EnhanceUtils.byteBufUtils));
+        return result;
+    }
+
+    @Override
+    public String defaultValue(StringBuilder builder, Field field, IFieldRegistration fieldRegistration) {
+        var result = "result" + GenerateProtocolFile.index.getAndIncrement();
+        builder.append(StringUtils.format("String {} = \"\";", result));
         return result;
     }
 

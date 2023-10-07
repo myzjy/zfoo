@@ -12,15 +12,13 @@
 
 package com.zfoo.net.packet.tcp;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1150)
-public class SyncMessAsk implements IPacket {
+public class SyncMessAsk {
 
     private String message;
 

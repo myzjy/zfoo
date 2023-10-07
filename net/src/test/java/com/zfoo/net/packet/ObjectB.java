@@ -19,10 +19,9 @@ import java.util.Objects;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1117)
-public class ObjectB implements IPacket {
+public class ObjectB {
 
     private boolean flag;
 

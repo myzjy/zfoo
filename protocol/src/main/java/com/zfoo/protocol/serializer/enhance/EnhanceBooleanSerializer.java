@@ -22,7 +22,6 @@ import java.lang.reflect.Field;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class EnhanceBooleanSerializer implements IEnhanceSerializer {
 
@@ -42,6 +41,17 @@ public class EnhanceBooleanSerializer implements IEnhanceSerializer {
             builder.append(StringUtils.format("boolean {} = {}.readBoolean($1);", result, EnhanceUtils.byteBufUtils));
         } else {
             builder.append(StringUtils.format("Boolean {} = {}.readBooleanBox($1);", result, EnhanceUtils.byteBufUtils));
+        }
+        return result;
+    }
+
+    @Override
+    public String defaultValue(StringBuilder builder, Field field, IFieldRegistration fieldRegistration) {
+        var result = "result" + GenerateProtocolFile.index.getAndIncrement();
+        if (isPrimitiveField(field)) {
+            builder.append(StringUtils.format("boolean {} = false;", result));
+        } else {
+            builder.append(StringUtils.format("Boolean {} = Boolean.FALSE;", result));
         }
         return result;
     }

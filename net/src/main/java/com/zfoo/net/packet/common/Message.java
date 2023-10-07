@@ -14,7 +14,6 @@
 package com.zfoo.net.packet.common;
 
 import com.baidu.bjf.remoting.protobuf.annotation.ProtobufClass;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.anno.Protocol;
 
@@ -22,11 +21,10 @@ import com.zfoo.protocol.anno.Protocol;
  * 通用的返回，既可以用在远程调用，又可以嵌套在其它协议里
  *
  * @author godotg
- * @version 3.0
  */
 @ProtobufClass
 @Protocol(id = 100)
-public class Message implements IPacket {
+public class Message {
 
     private byte module;
 
@@ -45,7 +43,7 @@ public class Message implements IPacket {
         return code == 0;
     }
 
-    public static Message valueOf(IPacket packet, int code, String message) {
+    public static Message valueOf(Object packet, int code, String message) {
         var mess = new Message();
         mess.module = ProtocolManager.moduleByProtocol(packet.getClass()).getId();
         mess.code = code;
@@ -53,7 +51,7 @@ public class Message implements IPacket {
         return mess;
     }
 
-    public static Message valueOf(IPacket packet, int code) {
+    public static Message valueOf(Object packet, int code) {
         return Message.valueOf(packet, code, null);
     }
 

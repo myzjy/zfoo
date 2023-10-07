@@ -19,10 +19,9 @@ import java.util.Objects;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1114)
-public class CM_Object implements IPacket {
+public class CM_Object {
 
     private int a;
 

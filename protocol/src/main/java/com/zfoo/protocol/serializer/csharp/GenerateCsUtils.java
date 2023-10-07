@@ -34,14 +34,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.zfoo.protocol.util.FileUtils.LS;
 import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateCsUtils {
 
@@ -67,7 +65,6 @@ public abstract class GenerateCsUtils {
         csSerializerMap.put(LongSerializer.INSTANCE, new CsLongSerializer());
         csSerializerMap.put(FloatSerializer.INSTANCE, new CsFloatSerializer());
         csSerializerMap.put(DoubleSerializer.INSTANCE, new CsDoubleSerializer());
-        csSerializerMap.put(CharSerializer.INSTANCE, new CsCharSerializer());
         csSerializerMap.put(StringSerializer.INSTANCE, new CsStringSerializer());
         csSerializerMap.put(ArraySerializer.INSTANCE, new CsArraySerializer());
         csSerializerMap.put(ListSerializer.INSTANCE, new CsListSerializer());
@@ -87,7 +84,7 @@ public abstract class GenerateCsUtils {
     public static void createProtocolManager() throws IOException {
         var list = List.of("csharp/ProtocolManager.cs"
                 , "csharp/IProtocolRegistration.cs"
-                , "csharp/IPacket.cs"
+                , "csharp/IProtocol.cs"
                 , "csharp/Buffer/ByteBuffer.cs"
                 , "csharp/Buffer/LittleEndianByteBuffer.cs"
                 , "csharp/Buffer/BigEndianByteBuffer.cs");
@@ -160,7 +157,7 @@ public abstract class GenerateCsUtils {
         }
 
         // ValueOf()方法
-        var valueOfParams = filedList.stream().map(it -> StringUtils.format("{} {}", it.getKey(), it.getValue())).collect(Collectors.toList());
+        var valueOfParams = filedList.stream().map(it -> StringUtils.format("{} {}", it.getKey(), it.getValue())).toList();
         var valueOfParamsStr = StringUtils.joinWith(StringUtils.COMMA + " ", valueOfParams.toArray());
 
         var csBuilder = new StringBuilder();

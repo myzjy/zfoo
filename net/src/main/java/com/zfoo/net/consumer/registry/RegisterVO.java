@@ -29,11 +29,9 @@ import org.springframework.lang.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class RegisterVO {
 
@@ -109,7 +107,7 @@ public class RegisterVO {
                 .map(it -> it.trim())
                 .map(it -> it.split(StringUtils.HYPHEN))
                 .map(it -> new ProviderModule(new ProtocolModule(Byte.parseByte(it[0]), it[1]), it[2]))
-                .collect(Collectors.toList());
+                .toList();
         return modules;
     }
 
@@ -122,7 +120,7 @@ public class RegisterVO {
                 .map(it -> it.trim())
                 .map(it -> it.split(StringUtils.HYPHEN))
                 .map(it -> new ConsumerModule(new ProtocolModule(Byte.parseByte(it[0]), it[1]), it[2], it[3]))
-                .collect(Collectors.toList());
+                .toList();
         return modules;
     }
 
@@ -156,7 +154,7 @@ public class RegisterVO {
             builder.append(StringUtils.SPACE).append(StringUtils.VERTICAL_BAR).append(StringUtils.SPACE);
             var providerModules = providerConfig.getProviders().stream()
                     .map(it -> StringUtils.joinWith(StringUtils.HYPHEN, it.getProtocolModule().getId(), it.getProtocolModule().getName(), it.getProvider()))
-                    .collect(Collectors.toList());
+                    .toList();
 
             // 服务提供者模块信息列表
             builder.append(StringUtils.format("provider:[{}]"
@@ -169,7 +167,7 @@ public class RegisterVO {
 
             var consumerModules = consumerConfig.getConsumers().stream()
                     .map(it -> StringUtils.joinWith(StringUtils.HYPHEN, it.getProtocolModule().getId(), it.getProtocolModule().getName(), it.getLoadBalancer(), it.getConsumer()))
-                    .collect(Collectors.toList());
+                    .toList();
 
             // 服务消费者模块信息列表
             builder.append(StringUtils.format("consumer:[{}]"

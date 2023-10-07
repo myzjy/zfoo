@@ -13,15 +13,13 @@
 package com.zfoo.net.packet.jprotobuf;
 
 import com.baidu.bjf.remoting.protobuf.annotation.Protobuf;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1501)
-public class JProtobufHelloResponse implements IPacket {
+public class JProtobufHelloResponse {
 
     @Protobuf(order = 1)
     private String message;

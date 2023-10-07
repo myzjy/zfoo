@@ -15,6 +15,7 @@ package com.zfoo.storage;
 
 import com.zfoo.scheduler.util.StopWatch;
 import com.zfoo.storage.manager.IStorageManager;
+import com.zfoo.storage.util.function.Func1;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -24,9 +25,10 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.Ordered;
 
+import java.util.List;
+
 /**
  * @author godotg
- * @version 3.0
  */
 public class StorageContext implements ApplicationListener<ApplicationContextEvent>, Ordered {
 
@@ -48,6 +50,22 @@ public class StorageContext implements ApplicationListener<ApplicationContextEve
 
     public static IStorageManager getStorageManager() {
         return instance.storageManager;
+    }
+
+    public static <V, K> V get(Class<V> clazz, K id) {
+        return instance.storageManager.getStorage(clazz).get(id);
+    }
+
+    public static <V> List<V> getList(Class<V> clazz) {
+        return instance.storageManager.getStorage(clazz).getList();
+    }
+
+    public static <INDEX, V> List<V> getIndexes(Class<V> clazz, Func1<V, INDEX> func, INDEX index) {
+        return instance.storageManager.getStorage(clazz).getIndexes(func, index);
+    }
+
+    public static <INDEX, V> V getUniqueIndex(Class<V> clazz, Func1<V, INDEX> func, INDEX uindex) {
+        return instance.storageManager.getStorage(clazz).getUniqueIndex(func, uindex);
     }
 
     @Override

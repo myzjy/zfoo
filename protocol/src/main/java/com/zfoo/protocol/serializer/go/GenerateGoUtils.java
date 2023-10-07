@@ -41,7 +41,6 @@ import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateGoUtils {
 
@@ -67,7 +66,6 @@ public abstract class GenerateGoUtils {
         goSerializerMap.put(LongSerializer.INSTANCE, new GoLongSerializer());
         goSerializerMap.put(FloatSerializer.INSTANCE, new GoFloatSerializer());
         goSerializerMap.put(DoubleSerializer.INSTANCE, new GoDoubleSerializer());
-        goSerializerMap.put(CharSerializer.INSTANCE, new GoCharSerializer());
         goSerializerMap.put(StringSerializer.INSTANCE, new GoStringSerializer());
         goSerializerMap.put(ArraySerializer.INSTANCE, new GoArraySerializer());
         goSerializerMap.put(ListSerializer.INSTANCE, new GoListSerializer());

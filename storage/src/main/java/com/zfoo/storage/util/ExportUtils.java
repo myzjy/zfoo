@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class ExportUtils {
 
@@ -83,14 +82,14 @@ public abstract class ExportUtils {
         return FileUtils.getAllReadableFiles(new File(inputDir))
                 .stream()
                 .filter(it -> StorageEnum.isExcel(FileUtils.fileExtName(it.getName())))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public static List<File> scanCsvFiles(String inputDir) {
         return FileUtils.getAllReadableFiles(new File(inputDir))
                 .stream()
                 .filter(it -> StorageEnum.getResourceEnumByType(FileUtils.fileExtName(it.getName())) == StorageEnum.CSV)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // 将class里的map自动赋值storage

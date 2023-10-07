@@ -13,7 +13,6 @@
 
 package com.zfoo.net.packet.websocket;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 import java.util.List;
@@ -22,10 +21,9 @@ import java.util.Set;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 2070)
-public class WebSocketPacketRequest implements IPacket {
+public class WebSocketPacketRequest {
 
     private byte a;
     private Byte aa;

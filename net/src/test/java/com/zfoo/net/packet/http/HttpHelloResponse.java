@@ -12,15 +12,13 @@
 
 package com.zfoo.net.packet.http;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1701)
-public class HttpHelloResponse implements IPacket {
+public class HttpHelloResponse {
 
     private String message;
 

@@ -39,14 +39,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.zfoo.protocol.util.FileUtils.LS;
 import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateCppUtils {
 
@@ -73,7 +71,6 @@ public abstract class GenerateCppUtils {
         cppSerializerMap.put(LongSerializer.INSTANCE, new CppLongSerializer());
         cppSerializerMap.put(FloatSerializer.INSTANCE, new CppFloatSerializer());
         cppSerializerMap.put(DoubleSerializer.INSTANCE, new CppDoubleSerializer());
-        cppSerializerMap.put(CharSerializer.INSTANCE, new CppCharSerializer());
         cppSerializerMap.put(StringSerializer.INSTANCE, new CppStringSerializer());
         cppSerializerMap.put(ArraySerializer.INSTANCE, new CppArraySerializer());
         cppSerializerMap.put(ListSerializer.INSTANCE, new CppListSerializer());
@@ -211,7 +208,7 @@ public abstract class GenerateCppUtils {
         // ValueOf()方法
         var valueOfParams = filedList.stream()
                 .map(it -> StringUtils.format("{} {}", it.getKey(), it.getValue()))
-                .collect(Collectors.toList());
+                .toList();
         var valueOfParamsStr = StringUtils.joinWith(StringUtils.COMMA + " ", valueOfParams.toArray());
 
         var cppBuilder = new StringBuilder();

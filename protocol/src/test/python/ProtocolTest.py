@@ -3,8 +3,8 @@
 from unittest import TestCase
 import struct
 
-from pyProtocol import ProtocolManager
-from pyProtocol import ByteBuffer
+from zfoopy import ProtocolManager
+from zfoopy import ByteBuffer
 
 def print_bytearray(array):
     signed_byte_array = struct.unpack('b' * len(array), array)
@@ -15,7 +15,11 @@ def print_bytearray(array):
 class ByteBufferTestCase(TestCase):
     def test_complex_object(self):
         # 打开文件并读取内容
-        with open('NormalObject.bytes', 'rb') as file:
+        # with open('D://github//zfoo//protocol//src//test//resources//compatible//normal-no-compatible.bytes', 'rb') as file:
+        # with open('D://github//zfoo//protocol//src//test//resources//compatible//normal-out-compatible.bytes', 'rb') as file:
+        # with open('D://github//zfoo//protocol//src//test//resources//compatible//normal-inner-compatible.bytes', 'rb') as file:
+        # with open('D://github//zfoo//protocol//src//test//resources//compatible//normal-out-inner-compatible.bytes', 'rb') as file:
+        with open('D://github//zfoo//protocol//src//test//resources//compatible//normal-out-inner-inner-compatible.bytes', 'rb') as file:
             content = file.read()
 
         # 将内容转为bytearray

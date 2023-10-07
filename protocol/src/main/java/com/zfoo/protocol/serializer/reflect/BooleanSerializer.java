@@ -19,7 +19,6 @@ import io.netty.buffer.ByteBuf;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class BooleanSerializer implements ISerializer {
 
@@ -33,5 +32,15 @@ public class BooleanSerializer implements ISerializer {
     @Override
     public Object readObject(ByteBuf buffer, IFieldRegistration fieldRegistration) {
         return ByteBufUtils.readBooleanBox(buffer);
+    }
+
+    @Override
+    public Object defaultValue(IFieldRegistration fieldRegistration) {
+        return Boolean.FALSE;
+    }
+
+    @Override
+    public int predictionLength(IFieldRegistration fieldRegistration) {
+        return 1;
     }
 }

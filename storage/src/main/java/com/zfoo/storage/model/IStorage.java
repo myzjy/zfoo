@@ -12,6 +12,7 @@
 
 package com.zfoo.storage.model;
 
+import com.zfoo.storage.util.function.Func1;
 import org.springframework.lang.Nullable;
 
 import java.util.Collection;
@@ -23,11 +24,11 @@ import java.util.Map;
  */
 public interface IStorage<K, V> {
 
-    boolean contain(K key);
+    boolean contain(K id);
 
-    boolean contain(int key);
+    boolean contain(int id);
 
-    boolean contain(long key);
+    boolean contain(long id);
 
     V get(K id);
 
@@ -43,18 +44,16 @@ public interface IStorage<K, V> {
 
     Collection<V> getAll();
 
+    List<V> getList();
+
     Map<K, V> getData();
 
     IdDef getIdDef();
 
-    List<V> getIndex(String indexName, Object key);
+    <INDEX> List<V> getIndexes(Func1<V, INDEX> func, INDEX index);
 
     @Nullable
-    V getUniqueIndex(String uniqueIndexName, Object key);
+    <INDEX> V getUniqueIndex(Func1<V, INDEX> func, INDEX uindex);
 
     int size();
-
-    V put(Object value);
-
-
 }

@@ -33,14 +33,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.zfoo.protocol.util.FileUtils.LS;
 import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateLuaUtils {
 
@@ -66,7 +64,6 @@ public abstract class GenerateLuaUtils {
         luaSerializerMap.put(LongSerializer.INSTANCE, new LuaLongSerializer());
         luaSerializerMap.put(FloatSerializer.INSTANCE, new LuaFloatSerializer());
         luaSerializerMap.put(DoubleSerializer.INSTANCE, new LuaDoubleSerializer());
-        luaSerializerMap.put(CharSerializer.INSTANCE, new LuaCharSerializer());
         luaSerializerMap.put(StringSerializer.INSTANCE, new LuaStringSerializer());
         luaSerializerMap.put(ArraySerializer.INSTANCE, new LuaArraySerializer());
         luaSerializerMap.put(ListSerializer.INSTANCE, new LuaListSerializer());
@@ -136,7 +133,7 @@ public abstract class GenerateLuaUtils {
         var protocolId = registration.getId();
         var fields = registration.getFields();
 
-        var valueOfParams = StringUtils.joinWith(", ", Arrays.stream(fields).map(it -> it.getName()).collect(Collectors.toList()).toArray());
+        var valueOfParams = StringUtils.joinWith(", ", Arrays.stream(fields).map(it -> it.getName()).toList().toArray());
         var luaBuilder = new StringBuilder();
 
         for (var i = 0; i < fields.length; i++) {

@@ -4,9 +4,8 @@ using CsProtocol.Buffer;
 
 namespace CsProtocol
 {
-    // @author godotg
-    // @version 3.0
-    public class ObjectB : IPacket
+    
+    public class ObjectB : IProtocol
     {
         public bool flag;
 
@@ -32,7 +31,7 @@ namespace CsProtocol
             return 103;
         }
 
-        public void Write(ByteBuffer buffer, IPacket packet)
+        public void Write(ByteBuffer buffer, IProtocol packet)
         {
             if (buffer.WritePacketFlag(packet))
             {
@@ -42,7 +41,7 @@ namespace CsProtocol
             buffer.WriteBool(message.flag);
         }
 
-        public IPacket Read(ByteBuffer buffer)
+        public IProtocol Read(ByteBuffer buffer)
         {
             if (!buffer.ReadBool())
             {

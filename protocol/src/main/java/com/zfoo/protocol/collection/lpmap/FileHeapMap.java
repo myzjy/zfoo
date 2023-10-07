@@ -31,7 +31,6 @@ import java.util.function.BiConsumer;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class FileHeapMap<V> implements LpMap<V> {
 
@@ -110,6 +109,7 @@ public class FileHeapMap<V> implements LpMap<V> {
             var size = ByteBufUtils.readLong(buffer);
             for (var i = 0; i < size; i++) {
                 var key = ByteBufUtils.readLong(buffer);
+                @SuppressWarnings("unchecked")
                 var value = (V) protocolRegistration.read(buffer);
                 put(key, value);
             }

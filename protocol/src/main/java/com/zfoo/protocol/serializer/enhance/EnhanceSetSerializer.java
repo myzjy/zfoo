@@ -25,7 +25,6 @@ import java.lang.reflect.Field;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class EnhanceSetSerializer implements IEnhanceSerializer {
 
@@ -72,6 +71,14 @@ public class EnhanceSetSerializer implements IEnhanceSerializer {
 
         var readObject = EnhanceUtils.enhanceSerializer(setField.getSetElementRegistration().serializer()).readObject(builder, field, setField.getSetElementRegistration());
         builder.append(StringUtils.format("{}.add({});}", set, readObject));
+        return set;
+    }
+
+    @Override
+    public String defaultValue(StringBuilder builder, Field field, IFieldRegistration fieldRegistration) {
+        var setField = (SetField) fieldRegistration;
+        var set = "set" + GenerateProtocolFile.index.getAndIncrement();
+        builder.append(StringUtils.format("Set {} = CollectionUtils.newSet(0);", set));
         return set;
     }
 

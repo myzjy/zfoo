@@ -25,7 +25,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Ignore
 public class EntityCachesTest {
@@ -36,6 +35,7 @@ public class EntityCachesTest {
         var context = new ClassPathXmlApplicationContext("application.xml");
 
         // 动态去拿到UserEntity的EntityCaches
+        @SuppressWarnings("unchecked")
         var userEntityCaches = (IEntityCache<Long, UserEntity>) OrmContext.getOrmManager().getEntityCaches(UserEntity.class);
 
         for (var i = 1; i <= 10; i++) {

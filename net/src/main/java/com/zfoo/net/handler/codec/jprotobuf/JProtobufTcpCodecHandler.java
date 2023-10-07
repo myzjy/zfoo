@@ -17,9 +17,7 @@ import com.baidu.bjf.remoting.protobuf.Codec;
 import com.baidu.bjf.remoting.protobuf.ProtobufProxy;
 import com.zfoo.net.packet.DecodedPacketInfo;
 import com.zfoo.net.packet.EncodedPacketInfo;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.packet.PacketService;
-import com.zfoo.net.router.attachment.IAttachment;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.buffer.ByteBufUtils;
 import com.zfoo.protocol.util.IOUtils;
@@ -36,7 +34,6 @@ import java.util.List;
  * header = body(bytes.length) + protocolId.length(2byte)
  *
  * @author godotg
- * @version 3.0
  */
 public class JProtobufTcpCodecHandler extends ByteToMessageCodec<EncodedPacketInfo> {
 
@@ -80,12 +77,13 @@ public class JProtobufTcpCodecHandler extends ByteToMessageCodec<EncodedPacketIn
         var bytes = ByteBufUtils.readAllBytes(buffer);
         var packet = protobufCodec.decode(bytes);
 
-        return DecodedPacketInfo.valueOf((IPacket) packet, null);
+        return DecodedPacketInfo.valueOf(packet, null);
     }
 
-    public void write(ByteBuf buffer, IPacket packet, IAttachment attachment) throws IOException {
+    public void write(ByteBuf buffer, Object packet, Object attachment) throws IOException {
         // 写入protobuf协议
-        var protobufCodec = (Codec<IPacket>) ProtobufProxy.create(packet.getClass());
+        @SuppressWarnings("unchecked")
+        var protobufCodec = (Codec<Object>) ProtobufProxy.create(packet.getClass());
         byte[] bytes = protobufCodec.encode(packet);
         // header(4byte) + protocolId(2byte)
         buffer.writeInt(bytes.length + 2);

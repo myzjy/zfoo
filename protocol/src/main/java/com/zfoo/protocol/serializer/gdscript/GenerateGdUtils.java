@@ -27,6 +27,7 @@ import com.zfoo.protocol.registration.field.MapField;
 import com.zfoo.protocol.serializer.CodeLanguage;
 import com.zfoo.protocol.serializer.enhance.EnhanceObjectProtocolSerializer;
 import com.zfoo.protocol.serializer.reflect.*;
+import com.zfoo.protocol.serializer.typescript.GenerateTsUtils;
 import com.zfoo.protocol.util.ClassUtils;
 import com.zfoo.protocol.util.FileUtils;
 import com.zfoo.protocol.util.ReflectionUtils;
@@ -44,12 +45,12 @@ import static com.zfoo.protocol.util.StringUtils.TAB_ASCII;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateGdUtils {
 
-    private static String protocolOutputRootPath = "gdProtocol";
-    private static String protocolOutputPath = StringUtils.EMPTY;
+    // custom configuration
+    public static String protocolOutputRootPath = "zfoogd";
+    public static String protocolOutputPath = StringUtils.EMPTY;
 
     private static Map<ISerializer, IGdSerializer> gdSerializerMap;
 
@@ -58,16 +59,13 @@ public abstract class GenerateGdUtils {
     }
 
     public static void init(GenerateOperation generateOperation) {
-        // 如果没有配置路径，则使用默认路径
+        // if not specify output path, then use current default path
         if (StringUtils.isEmpty(generateOperation.getProtocolPath())) {
             protocolOutputPath = FileUtils.joinPath(generateOperation.getProtocolPath(), protocolOutputRootPath);
         } else {
             protocolOutputPath = generateOperation.getProtocolPath();
         }
-
         FileUtils.deleteFile(new File(protocolOutputPath));
-        var protocolOutputPathFile = FileUtils.createDirectory(protocolOutputPath);
-        protocolOutputRootPath = protocolOutputPathFile.getName();
 
         gdSerializerMap = new HashMap<>();
         gdSerializerMap.put(BooleanSerializer.INSTANCE, new GdBooleanSerializer());
@@ -77,7 +75,6 @@ public abstract class GenerateGdUtils {
         gdSerializerMap.put(LongSerializer.INSTANCE, new GdLongSerializer());
         gdSerializerMap.put(FloatSerializer.INSTANCE, new GdFloatSerializer());
         gdSerializerMap.put(DoubleSerializer.INSTANCE, new GdDoubleSerializer());
-        gdSerializerMap.put(CharSerializer.INSTANCE, new GdCharSerializer());
         gdSerializerMap.put(StringSerializer.INSTANCE, new GdStringSerializer());
         gdSerializerMap.put(ArraySerializer.INSTANCE, new GdArraySerializer());
         gdSerializerMap.put(ListSerializer.INSTANCE, new GdListSerializer());
@@ -171,13 +168,9 @@ public abstract class GenerateGdUtils {
             var fieldType = gdSerializer(fieldRegistration.serializer()).fieldType(field, fieldRegistration);
             // 生成类型的注释
             gdBuilder.append(StringUtils.format("var {}: {}", fieldName, fieldType));
-            if (fieldRegistration instanceof MapField) {
-                var mapField = (MapField) fieldRegistration;
-                var mapKeyRegistration = mapField.getMapKeyRegistration();
-                var keyType = gdSerializer(mapKeyRegistration.serializer()).fieldType(field, mapKeyRegistration);
-                var mapValueRegistration = mapField.getMapValueRegistration();
-                var valueType = gdSerializer(mapValueRegistration.serializer()).fieldType(field, mapValueRegistration);
-                gdBuilder.append(StringUtils.format(" # Dictionary<{}, {}>", keyType, valueType));
+            if (fieldType.equals("Dictionary") || fieldType.equals("Array")) {
+                var typeNote = GenerateTsUtils.toTsClassName(field.getGenericType().toString());
+                gdBuilder.append(StringUtils.format(TAB_ASCII  + "# {}", typeNote));
             }
             gdBuilder.append(LS);
         }

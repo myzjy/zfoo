@@ -3,9 +3,8 @@ English | [简体中文](./README_CN.md)
 ### Ⅰ. Introduction
 
 - [zfoo protocol](https://github.com/zfoo-project/zfoo/blob/main/protocol/README.md)
-  It is currently the fastest framework for binary serialization and deserialization in Java, and has the fewest
-  serialization bytes
-- The protocol is currently natively supported **C++ Java Javascript C# Go Lua GDScript Pythont**，It's easy to do cross-platform
+  Ultimate performance binary serialization and deserialization in Java, and has the fewest serialization bytes
+- The protocol is currently natively supported **C++ Java Javascript C# Go Lua GDScript Python**，It's easy to do cross-platform
 - The protocol can customize the private protocol format to make your protocol more secure, and supports adding fields
   and being compatible with previous and subsequent protocols
 - Compatible with Protobuf, it supports the generation of Protobuf protocol files, and provides a generation method from
@@ -15,7 +14,7 @@ English | [简体中文](./README_CN.md)
 
 ### Ⅱ. Quick use
 
-- Environmental requirements **JDK 11+**
+- Environment requirement **JDK 17+**, support **OpenJDK**, **Oracle JDK** and **native GraalVM**
 
 - Protocol is an independent project, does not depend on other projects, can be directly opened, locally installed to
   its own local maven repository, can be used alone
@@ -34,9 +33,9 @@ var packet = ProtocolManager.read(buffer);
 ### Ⅲ. Performance testing
 
 - Single-threaded environment, 50% faster than Protobuf and 100% faster than Kryo without any JVM parameter
-  tuning,[参见性能测试](src/test/java/com/zfoo/protocol/SpeedTest.java)
+  tuning,[参见性能测试](src/test/java/com/zfoo/protocol/BenchmarkTesting.java)
 - Thread safety, the performance of zfoo and Protobuf is not affected in any way, kryo will lose some performance
-  because of thread insecurity,[参见性能测试](src/test/java/com/zfoo/protocol/SpeedTest.java)
+  because of thread insecurity,[参见性能测试](src/test/java/com/zfoo/protocol/BenchmarkTesting.java)
 
 
 - Test the environment
@@ -122,17 +121,6 @@ For complex objects, ZFOO package size 2216, KRYO package size 2528, and Protobu
 
 - The protocol class must be a simple javabean, not inheriting from any other class, but can inherit an interface
 
-- In order to prevent objects in the code and avoid some potential concurrency problems caused by the mixing of objects
-  in the protocol layer and the po layer, zfoo mandates that protocol classes must implement the IPacket interface
-
-```
-Now the interface of IPacket is just an identification interface, inheriting the design of IPacket is mainly to make 
-the code more elegant and easier to understand, and it is not a lot of work to inherit only Object
-
-The design of inheriting IPacket also has cross-language considerations, which greatly simplifies the difficulty 
-of serialization and deserialization in other languages and unifies the code implementation of other languages
-```
-
 - The protocol number is defined as a short type to reduce the packet size and memory size, a packet can be reduced by 2
   bytes, and the application memory of each protocol can also be reduced by 6 byte(protocols + IProtocolRegistration +
   protocolIdMap)
@@ -146,7 +134,7 @@ your protocol number a little more compactly, so that your protocol number will 
     - The first uses annotations: @Protocol(id = protocolId)
       ```
       @Protocol(id = 104)
-      public class SimpleObject implements IPacket {
+      public class SimpleObject {
       
           public int c;
           public boolean g;
@@ -158,7 +146,7 @@ your protocol number a little more compactly, so that your protocol number will 
     - The second use: Register the agreement through Protocol Manager.initProtocolAuto() without writing the protocol
       number
       ```
-      public class SimpleObject implements IPacket {
+      public class SimpleObject {
       
           public int c;
       

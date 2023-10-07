@@ -19,10 +19,9 @@ import java.util.Objects;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1110)
-public class CM_Int implements IPacket {
+public class CM_Int {
 
     private boolean flag;
 

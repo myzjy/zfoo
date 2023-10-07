@@ -13,17 +13,15 @@
 
 package com.zfoo.net.packet.websocket;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 import java.util.Objects;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 2071)
-public class WebSocketObjectA implements IPacket {
+public class WebSocketObjectA {
 
     private int a;
 

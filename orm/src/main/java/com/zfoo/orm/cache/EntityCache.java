@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class EntityCache<PK extends Comparable<PK>, E extends IEntity<PK>> implements IEntityCache<PK, E> {
 
@@ -71,7 +70,9 @@ public class EntityCache<PK extends Comparable<PK>, E extends IEntity<PK>> imple
 
                         // 缓存失效之前，将数据写入数据库
                         var entity = pnode.getEntity();
-                        var collection = OrmContext.getOrmManager().getCollection((Class<E>) entityDef.getClazz());
+                        @SuppressWarnings("unchecked")
+                        var entityClass = (Class<E>) entityDef.getClazz();
+                        var collection = OrmContext.getOrmManager().getCollection(entityClass);
 
                         var version = entity.gvs();
                         entity.svs(version + 1);
@@ -89,11 +90,14 @@ public class EntityCache<PK extends Comparable<PK>, E extends IEntity<PK>> imple
                 .build(new CacheLoader<PK, PNode<E>>() {
                     @Override
                     public @Nullable PNode<E> load(@NonNull PK pk) {
+                        @SuppressWarnings("unchecked")
                         var entity = (E) OrmContext.getAccessor().load(pk, (Class<IEntity<?>>) entityDef.getClazz());
 
                         // 如果数据库中不存在则给一个默认值
                         if (entity == null) {
-                            entity = (E) entityDef.newEntity(pk);
+                            @SuppressWarnings("unchecked")
+                            var newEntity = (E) entityDef.newEntity(pk);
+                            return new PNode<E>(newEntity);
                         }
 
                         return new PNode<E>(entity);
@@ -126,6 +130,7 @@ public class EntityCache<PK extends Comparable<PK>, E extends IEntity<PK>> imple
         }
 
         logger.warn("数据库[{}]无法加载缓存[pk:{}]，返回默认值", entityDef.getClazz().getSimpleName(), pk);
+        @SuppressWarnings("unchecked")
         var entity = (E) entityDef.newEntity(pk);
         var pnode = new PNode<E>(entity);
         cache.put(pk, pnode);
@@ -209,7 +214,9 @@ public class EntityCache<PK extends Comparable<PK>, E extends IEntity<PK>> imple
                 page.setPage(currentPage);
                 var currentUpdateList = page.currentPageList(updateList);
                 try {
-                    var collection = OrmContext.getOrmManager().getCollection((Class<E>) entityDef.getClazz()).withWriteConcern(WriteConcern.ACKNOWLEDGED);
+                    @SuppressWarnings("unchecked")
+                    var entityClass = (Class<E>) entityDef.getClazz();
+                    var collection = OrmContext.getOrmManager().getCollection(entityClass).withWriteConcern(WriteConcern.ACKNOWLEDGED);
 
                     var batchList = currentUpdateList.stream()
                             .map(it -> {
@@ -222,7 +229,7 @@ public class EntityCache<PK extends Comparable<PK>, E extends IEntity<PK>> imple
 
                                 return new ReplaceOneModel<>(filter, it);
                             })
-                            .collect(Collectors.toList());
+                            .toList();
 
                     var result = collection.bulkWrite(batchList, new BulkWriteOptions().ordered(false));
                     if (result.getModifiedCount() == batchList.size()) {
@@ -253,10 +260,12 @@ public class EntityCache<PK extends Comparable<PK>, E extends IEntity<PK>> imple
             return;
         }
 
-        var ids = updateList.stream().map(it -> it.id()).collect(Collectors.toList());
+        var ids = updateList.stream().map(it -> it.id()).toList();
 
         try {
-            var dbList = OrmContext.getQuery((Class<E>) entityDef.getClazz()).in("_id", ids).queryAll();
+            @SuppressWarnings("unchecked")
+            var entityClass = (Class<E>) entityDef.getClazz();
+            var dbList = OrmContext.getQuery(entityClass).in("_id", ids).queryAll();
             var dbMap = dbList.stream().collect(Collectors.toMap(key -> key.id(), value -> value));
             for (var entity : updateList) {
                 var dbEntity = dbMap.get(entity.id());
@@ -304,7 +313,7 @@ public class EntityCache<PK extends Comparable<PK>, E extends IEntity<PK>> imple
         if (allPnodes.isEmpty()) {
             return Collections.emptyList();
         }
-        return allPnodes.stream().map(it -> it.getEntity()).collect(Collectors.toList());
+        return allPnodes.stream().map(it -> it.getEntity()).toList();
     }
 
     @Override

@@ -40,11 +40,12 @@ import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GeneratePyUtils {
 
-    private static String protocolOutputRootPath = "pyProtocol/";
+    // custom configuration
+    public static String protocolOutputRootPath = "zfoopy";
+    public static String protocolOutputPath = StringUtils.EMPTY;
 
     private static Map<ISerializer, IPySerializer> pySerializerMap;
 
@@ -54,10 +55,13 @@ public abstract class GeneratePyUtils {
     }
 
     public static void init(GenerateOperation generateOperation) {
-        protocolOutputRootPath = FileUtils.joinPath(generateOperation.getProtocolPath(), protocolOutputRootPath);
-
-        FileUtils.deleteFile(new File(protocolOutputRootPath));
-        FileUtils.createDirectory(protocolOutputRootPath);
+        // if not specify output path, then use current default path
+        if (StringUtils.isEmpty(generateOperation.getProtocolPath())) {
+            protocolOutputPath = FileUtils.joinPath(generateOperation.getProtocolPath(), protocolOutputRootPath);
+        } else {
+            protocolOutputPath = generateOperation.getProtocolPath();
+        }
+        FileUtils.deleteFile(new File(protocolOutputPath));
 
         pySerializerMap = new HashMap<>();
         pySerializerMap.put(BooleanSerializer.INSTANCE, new PyBooleanSerializer());
@@ -67,7 +71,6 @@ public abstract class GeneratePyUtils {
         pySerializerMap.put(LongSerializer.INSTANCE, new PyLongSerializer());
         pySerializerMap.put(FloatSerializer.INSTANCE, new PyFloatSerializer());
         pySerializerMap.put(DoubleSerializer.INSTANCE, new PyDoubleSerializer());
-        pySerializerMap.put(CharSerializer.INSTANCE, new PyCharSerializer());
         pySerializerMap.put(StringSerializer.INSTANCE, new PyStringSerializer());
         pySerializerMap.put(ArraySerializer.INSTANCE, new PyArraySerializer());
         pySerializerMap.put(ListSerializer.INSTANCE, new PyListSerializer());
@@ -77,15 +80,17 @@ public abstract class GeneratePyUtils {
     }
 
     public static void clear() {
-        pySerializerMap = null;
+        protocolOutputPath = null;
         protocolOutputRootPath = null;
+        pySerializerMap = null;
     }
 
     public static void createProtocolManager(List<IProtocolRegistration> protocolList) throws IOException {
         var list = List.of("python/ByteBuffer.py");
         for (var fileName : list) {
             var fileInputStream = ClassUtils.getFileFromClassPath(fileName);
-            var createFile = new File(StringUtils.format("{}/{}", protocolOutputRootPath, StringUtils.substringAfterFirst(fileName, "python/")));
+            var outputPath = StringUtils.format("{}/{}", protocolOutputPath, StringUtils.substringAfterFirst(fileName, "python/"));
+            var createFile = new File(outputPath);
             FileUtils.writeInputStreamToFile(createFile, fileInputStream);
         }
 
@@ -102,7 +107,8 @@ public abstract class GeneratePyUtils {
         }
 
         protocolManagerTemplate = StringUtils.format(protocolManagerTemplate, importBuilder.toString().trim(), StringUtils.EMPTY_JSON, initProtocolBuilder.toString().trim());
-        FileUtils.writeStringToFile(new File(StringUtils.format("{}/{}", protocolOutputRootPath, "ProtocolManager.py")), protocolManagerTemplate, true);
+        var outputPath = StringUtils.format("{}/{}", protocolOutputPath, "ProtocolManager.py");
+        FileUtils.writeStringToFile(new File(outputPath), protocolManagerTemplate, true);
     }
 
     public static void createPyProtocolFile(ProtocolRegistration registration) {
@@ -121,9 +127,8 @@ public abstract class GeneratePyUtils {
 
         protocolTemplate = StringUtils.format(protocolTemplate, classNote, protocolClazzName
                 , fieldDefinition.trim(), protocolId, writeObject.trim(), protocolClazzName, readObject.trim());
-        var protocolOutputPath = StringUtils.format("{}/{}/{}.py", protocolOutputRootPath
-                , GenerateProtocolPath.getProtocolPath(protocolId), protocolClazzName);
-        FileUtils.writeStringToFile(new File(protocolOutputPath), protocolTemplate, true);
+        var outputPath = StringUtils.format("{}/{}/{}.py", protocolOutputPath, GenerateProtocolPath.getProtocolPath(protocolId), protocolClazzName);
+        FileUtils.writeStringToFile(new File(outputPath), protocolTemplate, true);
     }
 
     private static String fieldDefinition(ProtocolRegistration registration) {
@@ -155,10 +160,19 @@ public abstract class GeneratePyUtils {
         var fields = registration.getFields();
         var fieldRegistrations = registration.getFieldRegistrations();
         var pyBuilder = new StringBuilder();
+        if (registration.isCompatible()) {
+            pyBuilder.append("beforeWriteIndex = buffer.getWriteOffset()").append(LS);
+            pyBuilder.append(TAB + TAB).append(StringUtils.format("buffer.writeInt({})", registration.getPredictionLength())).append(LS);
+        } else {
+            pyBuilder.append(TAB + TAB).append("buffer.writeInt(-1)").append(LS);
+        }
         for (var i = 0; i < fields.length; i++) {
             var field = fields[i];
             var fieldRegistration = fieldRegistrations[i];
             pySerializer(fieldRegistration.serializer()).writeObject(pyBuilder, "packet." + field.getName(), 2, field, fieldRegistration);
+        }
+        if (registration.isCompatible()) {
+            pyBuilder.append(TAB + TAB).append(StringUtils.format("buffer.adjustPadding({}, beforeWriteIndex)", registration.getPredictionLength())).append(LS);
         }
         return pyBuilder.toString();
     }
@@ -171,9 +185,10 @@ public abstract class GeneratePyUtils {
             var field = fields[i];
             var fieldRegistration = fieldRegistrations[i];
             if (field.isAnnotationPresent(Compatible.class)) {
-                pyBuilder.append(TAB + TAB).append("if not buffer.isReadable():").append(LS);
-                pyBuilder.append(TAB + TAB + TAB).append("return packet").append(LS);
-                pyBuilder.append(TAB + TAB).append("pass").append(LS);
+                pyBuilder.append(TAB + TAB).append("if buffer.compatibleRead(beforeReadIndex, length):").append(LS);
+                var compatibleReadObject = pySerializer(fieldRegistration.serializer()).readObject(pyBuilder, 3, field, fieldRegistration);
+                pyBuilder.append(TAB + TAB+ TAB).append(StringUtils.format("packet.{} = {}", field.getName(), compatibleReadObject)).append(LS);
+                continue;
             }
             var readObject = pySerializer(fieldRegistration.serializer()).readObject(pyBuilder, 2, field, fieldRegistration);
             pyBuilder.append(TAB + TAB).append(StringUtils.format("packet.{} = {}", field.getName(), readObject)).append(LS);

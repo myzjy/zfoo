@@ -12,15 +12,13 @@
 
 package com.zfoo.net.packet.tcp;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1300)
-public class TcpHelloRequest implements IPacket {
+public class TcpHelloRequest {
     private String message;
 
     public static TcpHelloRequest valueOf(String message) {

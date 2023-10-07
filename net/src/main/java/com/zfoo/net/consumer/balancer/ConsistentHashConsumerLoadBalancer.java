@@ -14,7 +14,6 @@
 package com.zfoo.net.consumer.balancer;
 
 import com.zfoo.net.NetContext;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.session.Session;
 import com.zfoo.net.util.ConsistentHash;
 import com.zfoo.net.util.FastTreeMapIntLong;
@@ -27,7 +26,6 @@ import org.springframework.lang.Nullable;
 
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.stream.Collectors;
 
 /**
  * 一致性hash负载均衡器，同一个session总是发到同一提供者
@@ -35,7 +33,6 @@ import java.util.stream.Collectors;
  * 通过argument计算一致性hash
  *
  * @author godotg
- * @version 3.0
  */
 public class ConsistentHashConsumerLoadBalancer extends AbstractConsumerLoadBalancer {
 
@@ -60,7 +57,7 @@ public class ConsistentHashConsumerLoadBalancer extends AbstractConsumerLoadBala
      * @return 调用的session
      */
     @Override
-    public Session loadBalancer(IPacket packet, Object argument) {
+    public Session loadBalancer(Object packet, Object argument) {
         if (argument == null) {
             return RandomConsumerLoadBalancer.getInstance().loadBalancer(packet, argument);
         }
@@ -105,7 +102,7 @@ public class ConsistentHashConsumerLoadBalancer extends AbstractConsumerLoadBala
         var sessionStringList = getSessionsByModule(module).stream()
                 .map(session -> new Pair<>(session.getConsumerAttribute().toString(), session.getSid()))
                 .sorted((a, b) -> a.getKey().compareTo(b.getKey()))
-                .collect(Collectors.toList());
+                .toList();
 
         var consistentHash = new ConsistentHash<>(sessionStringList, VIRTUAL_NODE_NUMS);
         var virtualNodeTreeMap = consistentHash.getVirtualNodeTreeMap();

@@ -16,10 +16,9 @@ import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 3)
-public class UdpAttachment implements IAttachment {
+public class UdpAttachment {
 
     private String host;
     private int port;
@@ -29,11 +28,6 @@ public class UdpAttachment implements IAttachment {
         attachment.host = host;
         attachment.port = port;
         return attachment;
-    }
-
-    @Override
-    public AttachmentType packetType() {
-        return AttachmentType.UDP_PACKET;
     }
 
     public String getHost() {

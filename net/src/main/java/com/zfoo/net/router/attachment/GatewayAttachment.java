@@ -17,10 +17,9 @@ import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 2)
-public class GatewayAttachment implements IAttachment {
+public class GatewayAttachment {
 
     /**
      * session id
@@ -35,8 +34,11 @@ public class GatewayAttachment implements IAttachment {
      */
     private long uid;
 
-    private boolean useTaskExecutorHashParam;
-    private int taskExecutorHashParam;
+    /**
+     * EN:Used to determine which thread the message is processed on
+     * CN:用来确定这条消息在哪一个线程处理
+     */
+    private int taskExecutorHash;
 
     /**
      * true for the client, false for the server
@@ -49,7 +51,6 @@ public class GatewayAttachment implements IAttachment {
      * CN:客户端发到网关的可能是一个带有同步或者异步的附加包，网关转发的时候需要把这个附加包给带上
      */
     private SignalAttachment signalAttachment;
-    private SignalOnlyAttachment signalOnlyAttachment;
 
 
     public GatewayAttachment() {
@@ -67,48 +68,14 @@ public class GatewayAttachment implements IAttachment {
     }
 
 
-    @Override
-    public AttachmentType packetType() {
-        return AttachmentType.GATEWAY_PACKET;
-    }
-
     /**
      * EN:Used to determine which thread the message is processed on
      * CN:用来确定这条消息在哪一个线程处理
      */
     public int taskExecutorHash() {
-        return useTaskExecutorHashParam ? taskExecutorHashParam : (int) uid;
+        return taskExecutorHash == 0 ? (int) uid : taskExecutorHash;
     }
 
-    public void wrapTaskExecutorHash(Object argument) {
-        this.useTaskExecutorHashParam = true;
-        this.taskExecutorHashParam = argument.hashCode();
-    }
-
-    public void wrapAttachment(IAttachment attachment) {
-        if (attachment == null) {
-            return;
-        }
-        switch (attachment.packetType()) {
-            case SIGNAL_ONLY_PACKET:
-                signalOnlyAttachment = (SignalOnlyAttachment) attachment;
-                break;
-            case SIGNAL_PACKET:
-                signalAttachment = (SignalAttachment) attachment;
-                break;
-            default:
-        }
-    }
-
-    public IAttachment attachment() {
-        if (signalAttachment != null) {
-            return signalAttachment;
-        }
-        if (signalOnlyAttachment != null) {
-            return signalOnlyAttachment;
-        }
-        return null;
-    }
 
     public long getSid() {
         return sid;
@@ -126,20 +93,12 @@ public class GatewayAttachment implements IAttachment {
         this.uid = uid;
     }
 
-    public boolean isUseTaskExecutorHashParam() {
-        return useTaskExecutorHashParam;
+    public int getTaskExecutorHash() {
+        return taskExecutorHash;
     }
 
-    public void setUseTaskExecutorHashParam(boolean useTaskExecutorHashParam) {
-        this.useTaskExecutorHashParam = useTaskExecutorHashParam;
-    }
-
-    public int getTaskExecutorHashParam() {
-        return taskExecutorHashParam;
-    }
-
-    public void setTaskExecutorHashParam(int taskExecutorHashParam) {
-        this.taskExecutorHashParam = taskExecutorHashParam;
+    public void setTaskExecutorHash(int taskExecutorHash) {
+        this.taskExecutorHash = taskExecutorHash;
     }
 
     public boolean isClient() {
@@ -159,11 +118,4 @@ public class GatewayAttachment implements IAttachment {
         this.signalAttachment = signalAttachment;
     }
 
-    public SignalOnlyAttachment getSignalOnlyAttachment() {
-        return signalOnlyAttachment;
-    }
-
-    public void setSignalOnlyAttachment(SignalOnlyAttachment signalOnlyAttachment) {
-        this.signalOnlyAttachment = signalOnlyAttachment;
-    }
 }

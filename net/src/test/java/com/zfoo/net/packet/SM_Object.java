@@ -17,10 +17,9 @@ import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1115)
-public class SM_Object implements IPacket {
+public class SM_Object {
 
 }
 

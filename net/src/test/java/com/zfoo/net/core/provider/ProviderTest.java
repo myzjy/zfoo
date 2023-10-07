@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Ignore
 public class ProviderTest {
@@ -75,7 +74,7 @@ public class ProviderTest {
         var ask = new ProviderMessAsk();
         ask.setMessage("Hello, this is the consumer!");
         for (int i = 0; i < 1000; i++) {
-            ThreadUtils.sleep(3000);
+            ThreadUtils.sleep(1000);
             var response = NetContext.getConsumer().syncAsk(ask, ProviderMessAnswer.class, null).packet();
             logger.info("消费者请求[{}]收到消息[{}]", i, JsonUtils.object2String(response));
         }
@@ -96,7 +95,7 @@ public class ProviderTest {
         var atomicInteger = new AtomicInteger(0);
 
         for (int i = 0; i < 1000; i++) {
-            ThreadUtils.sleep(3000);
+            ThreadUtils.sleep(1000);
             NetContext.getConsumer().asyncAsk(ask, ProviderMessAnswer.class, null).whenComplete(answer -> {
                 logger.info("消费者请求[{}]收到消息[{}]", atomicInteger.incrementAndGet(), JsonUtils.object2String(answer));
             });
@@ -118,7 +117,7 @@ public class ProviderTest {
         var atomicInteger = new AtomicInteger(0);
 
         for (int i = 0; i < 1000; i++) {
-            ThreadUtils.sleep(3000);
+            ThreadUtils.sleep(1000);
             NetContext.getConsumer().asyncAsk(ask, ProviderMessAnswer.class, 100).whenComplete(answer -> {
                 logger.info("消费者请求[{}]收到消息[{}]", atomicInteger.incrementAndGet(), JsonUtils.object2String(answer));
             });

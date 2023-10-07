@@ -28,7 +28,6 @@ import static com.zfoo.protocol.util.FileUtils.LS;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class CutDownListSerializer implements ICutDownSerializer {
 
@@ -265,7 +264,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                 }
                 break;
             default:
-                // List<IPacket>
+                // List<IProtocol>
                 if (listField.getListElementRegistration() instanceof ObjectProtocolField) {
                     var protocolId = ((ObjectProtocolField) listField.getListElementRegistration()).getProtocolId();
                     switch (language) {

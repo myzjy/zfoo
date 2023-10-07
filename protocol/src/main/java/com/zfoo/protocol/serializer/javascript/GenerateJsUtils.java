@@ -18,9 +18,9 @@ import com.zfoo.protocol.generate.GenerateOperation;
 import com.zfoo.protocol.generate.GenerateProtocolFile;
 import com.zfoo.protocol.generate.GenerateProtocolNote;
 import com.zfoo.protocol.generate.GenerateProtocolPath;
-import com.zfoo.protocol.model.Pair;
 import com.zfoo.protocol.registration.IProtocolRegistration;
 import com.zfoo.protocol.registration.ProtocolRegistration;
+import com.zfoo.protocol.registration.field.IFieldRegistration;
 import com.zfoo.protocol.serializer.CodeLanguage;
 import com.zfoo.protocol.serializer.reflect.*;
 import com.zfoo.protocol.util.ClassUtils;
@@ -33,18 +33,18 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.zfoo.protocol.util.FileUtils.LS;
 import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateJsUtils {
 
-    private static String protocolOutputRootPath = "jsProtocol/";
+    // custom configuration
+    public static String protocolOutputRootPath = "zfoojs";
+    public static String protocolOutputPath = StringUtils.EMPTY;
 
     private static Map<ISerializer, IJsSerializer> jsSerializerMap;
 
@@ -54,10 +54,13 @@ public abstract class GenerateJsUtils {
     }
 
     public static void init(GenerateOperation generateOperation) {
-        protocolOutputRootPath = FileUtils.joinPath(generateOperation.getProtocolPath(), protocolOutputRootPath);
-
-        FileUtils.deleteFile(new File(protocolOutputRootPath));
-        FileUtils.createDirectory(protocolOutputRootPath);
+        // if not specify output path, then use current default path
+        if (StringUtils.isEmpty(generateOperation.getProtocolPath())) {
+            protocolOutputPath = FileUtils.joinPath(generateOperation.getProtocolPath(), protocolOutputRootPath);
+        } else {
+            protocolOutputPath = generateOperation.getProtocolPath();
+        }
+        FileUtils.deleteFile(new File(protocolOutputPath));
 
         jsSerializerMap = new HashMap<>();
         jsSerializerMap.put(BooleanSerializer.INSTANCE, new JsBooleanSerializer());
@@ -67,7 +70,6 @@ public abstract class GenerateJsUtils {
         jsSerializerMap.put(LongSerializer.INSTANCE, new JsLongSerializer());
         jsSerializerMap.put(FloatSerializer.INSTANCE, new JsFloatSerializer());
         jsSerializerMap.put(DoubleSerializer.INSTANCE, new JsDoubleSerializer());
-        jsSerializerMap.put(CharSerializer.INSTANCE, new JsCharSerializer());
         jsSerializerMap.put(StringSerializer.INSTANCE, new JsStringSerializer());
         jsSerializerMap.put(ArraySerializer.INSTANCE, new JsArraySerializer());
         jsSerializerMap.put(ListSerializer.INSTANCE, new JsListSerializer());
@@ -77,15 +79,17 @@ public abstract class GenerateJsUtils {
     }
 
     public static void clear() {
-        jsSerializerMap = null;
         protocolOutputRootPath = null;
+        protocolOutputPath = null;
+        jsSerializerMap = null;
     }
 
     public static void createProtocolManager(List<IProtocolRegistration> protocolList) throws IOException {
         var list = List.of("javascript/buffer/ByteBuffer.js", "javascript/buffer/long.js", "javascript/buffer/longbits.js");
         for (var fileName : list) {
             var fileInputStream = ClassUtils.getFileFromClassPath(fileName);
-            var createFile = new File(StringUtils.format("{}/{}", protocolOutputRootPath, StringUtils.substringAfterFirst(fileName, "javascript/")));
+            var outputPath = StringUtils.format("{}/{}", protocolOutputPath, StringUtils.substringAfterFirst(fileName, "javascript/"));
+            var createFile = new File(outputPath);
             FileUtils.writeInputStreamToFile(createFile, fileInputStream);
         }
 
@@ -103,7 +107,7 @@ public abstract class GenerateJsUtils {
         }
 
         protocolManagerTemplate = StringUtils.format(protocolManagerTemplate, importBuilder.toString().trim(), StringUtils.EMPTY_JSON, initProtocolBuilder.toString().trim());
-        FileUtils.writeStringToFile(new File(StringUtils.format("{}/{}", protocolOutputRootPath, "ProtocolManager.js")), protocolManagerTemplate, true);
+        FileUtils.writeStringToFile(new File(StringUtils.format("{}/{}", protocolOutputPath, "ProtocolManager.js")), protocolManagerTemplate, true);
     }
 
     public static void createJsProtocolFile(ProtocolRegistration registration) throws IOException {
@@ -117,48 +121,57 @@ public abstract class GenerateJsUtils {
         var protocolTemplate = ClassUtils.getFileFromClassPathToString("javascript/ProtocolTemplate.js");
 
         var classNote = GenerateProtocolNote.classNote(protocolId, CodeLanguage.JavaScript);
-        var valueOfMethod = valueOfMethod(registration);
+        var fieldDefinition = fieldDefinition(registration);
         var writeObject = writeObject(registration);
         var readObject = readObject(registration);
 
         protocolTemplate = StringUtils.format(protocolTemplate, classNote, protocolClazzName
-                , valueOfMethod.getKey().trim(), valueOfMethod.getValue().trim(), protocolClazzName, protocolId, protocolClazzName
+                , fieldDefinition.trim(), protocolClazzName, protocolId, protocolClazzName
                 , writeObject.trim(), protocolClazzName, protocolClazzName, readObject.trim(), protocolClazzName);
-        var protocolOutputPath = StringUtils.format("{}/{}/{}.js", protocolOutputRootPath
-                , GenerateProtocolPath.getProtocolPath(protocolId), protocolClazzName);
-        FileUtils.writeStringToFile(new File(protocolOutputPath), protocolTemplate, true);
+        var outputPath = StringUtils.format("{}/{}/{}.js", protocolOutputPath, GenerateProtocolPath.getProtocolPath(protocolId), protocolClazzName);
+        FileUtils.writeStringToFile(new File(outputPath), protocolTemplate, true);
     }
 
-    private static Pair<String, String> valueOfMethod(ProtocolRegistration registration) {
+    private static String fieldDefinition(ProtocolRegistration registration) {
         var protocolId = registration.getId();
         var fields = registration.getFields();
-
-        var fieldValueOf = StringUtils.joinWith(", ", Arrays.stream(fields).map(it -> it.getName()).collect(Collectors.toList()).toArray());
+        var fieldRegistrations = registration.getFieldRegistrations();
         var fieldDefinitionBuilder = new StringBuilder();
-
-        for (var field : fields) {
+        for (int i = 0; i < fields.length; i++) {
+            var field = fields[i];
+            IFieldRegistration fieldRegistration = fieldRegistrations[i];
             var fieldName = field.getName();
             // 生成注释
-            var fileNote = GenerateProtocolNote.fieldNote(protocolId, fieldName, CodeLanguage.JavaScript);
-            if (StringUtils.isNotBlank(fileNote)) {
-                fieldDefinitionBuilder.append(TAB).append(fileNote).append(LS);
+            var fieldNote = GenerateProtocolNote.fieldNote(protocolId, fieldName, CodeLanguage.JavaScript);
+            if (StringUtils.isNotBlank(fieldNote)) {
+                fieldDefinitionBuilder.append(TAB).append(fieldNote).append(LS);
             }
+            var triple = jsSerializer(fieldRegistration.serializer()).field(field, fieldRegistration);
             fieldDefinitionBuilder.append(TAB)
-                    .append(StringUtils.format("this.{} = {};", fieldName, fieldName))
-                    .append(" // ").append(field.getGenericType().getTypeName())// 生成类型的注释
+                    .append(StringUtils.format("this.{} = {}; // {}", fieldName, triple.getRight(), triple.getLeft()))
                     .append(LS);
+
         }
-        return new Pair<>(fieldValueOf, fieldDefinitionBuilder.toString());
+        return fieldDefinitionBuilder.toString();
     }
 
     private static String writeObject(ProtocolRegistration registration) {
         var fields = registration.getFields();
         var fieldRegistrations = registration.getFieldRegistrations();
         var jsBuilder = new StringBuilder();
+        if (registration.isCompatible()) {
+            jsBuilder.append("const beforeWriteIndex = buffer.getWriteOffset();").append(LS);
+            jsBuilder.append(TAB).append(StringUtils.format("buffer.writeInt({});", registration.getPredictionLength())).append(LS);
+        } else {
+            jsBuilder.append(TAB).append("buffer.writeInt(-1);").append(LS);
+        }
         for (var i = 0; i < fields.length; i++) {
             var field = fields[i];
             var fieldRegistration = fieldRegistrations[i];
             jsSerializer(fieldRegistration.serializer()).writeObject(jsBuilder, "packet." + field.getName(), 1, field, fieldRegistration);
+        }
+        if (registration.isCompatible()) {
+            jsBuilder.append(TAB).append(StringUtils.format("buffer.adjustPadding({}, beforeWriteIndex);", registration.getPredictionLength())).append(LS);
         }
         return jsBuilder.toString();
     }
@@ -171,9 +184,11 @@ public abstract class GenerateJsUtils {
             var field = fields[i];
             var fieldRegistration = fieldRegistrations[i];
             if (field.isAnnotationPresent(Compatible.class)) {
-                jsBuilder.append(TAB).append("if (!buffer.isReadable()) {").append(LS);
-                jsBuilder.append(TAB + TAB).append("return packet;").append(LS);
+                jsBuilder.append(TAB).append("if (buffer.compatibleRead(beforeReadIndex, length)) {").append(LS);
+                var compatibleReadObject = jsSerializer(fieldRegistration.serializer()).readObject(jsBuilder, 2, field, fieldRegistration);
+                jsBuilder.append(TAB + TAB).append(StringUtils.format("packet.{} = {};", field.getName(), compatibleReadObject)).append(LS);
                 jsBuilder.append(TAB).append("}").append(LS);
+                continue;
             }
             var readObject = jsSerializer(fieldRegistration.serializer()).readObject(jsBuilder, 1, field, fieldRegistration);
             jsBuilder.append(TAB).append(StringUtils.format("packet.{} = {};", field.getName(), readObject)).append(LS);

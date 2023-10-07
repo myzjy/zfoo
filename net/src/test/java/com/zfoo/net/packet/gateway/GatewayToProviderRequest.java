@@ -13,15 +13,13 @@
 
 package com.zfoo.net.packet.gateway;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 5000)
-public class GatewayToProviderRequest implements IPacket {
+public class GatewayToProviderRequest {
 
     private String message;
 

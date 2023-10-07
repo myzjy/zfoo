@@ -15,8 +15,8 @@ package com.zfoo.boot.graalvm;
 import com.zfoo.net.config.model.NetConfig;
 import com.zfoo.net.core.gateway.model.*;
 import com.zfoo.net.packet.IPacket;
-import com.zfoo.net.packet.common.*;
 import com.zfoo.net.packet.common.Error;
+import com.zfoo.net.packet.common.*;
 import com.zfoo.net.router.attachment.*;
 import com.zfoo.protocol.util.ClassUtils;
 import com.zfoo.protocol.util.DomUtils;
@@ -33,7 +33,6 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Register runtime hints for the token library
@@ -53,7 +52,6 @@ public class GraalvmNetHints implements RuntimeHintsRegistrar {
 
         // atachment
         classes.add(SignalAttachment.class);
-        classes.add(SignalOnlyAttachment.class);
         classes.add(GatewayAttachment.class);
         classes.add(UdpAttachment.class);
         classes.add(HttpAttachment.class);
@@ -78,10 +76,7 @@ public class GraalvmNetHints implements RuntimeHintsRegistrar {
         classes.add(TripleString.class);
         classes.add(TripleLSS.class);
 
-        // IPacket
         var filterClasses = HintUtils.filterAllClass(Collections.emptyList(), List.of(IPacket.class));
-        // filter IAttachment
-        filterClasses = filterClasses.stream().filter(it -> !it.equals(IAttachment.class)).collect(Collectors.toSet());
         classes.addAll(filterClasses);
 
         // protocol.xml

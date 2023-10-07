@@ -22,7 +22,6 @@ import java.lang.reflect.Field;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class EnhanceShortSerializer implements IEnhanceSerializer {
 
@@ -42,6 +41,17 @@ public class EnhanceShortSerializer implements IEnhanceSerializer {
             builder.append(StringUtils.format("short {} = {}.readShort($1);", result, EnhanceUtils.byteBufUtils));
         } else {
             builder.append(StringUtils.format("Short {} = {}.readShortBox($1);", result, EnhanceUtils.byteBufUtils));
+        }
+        return result;
+    }
+
+    @Override
+    public String defaultValue(StringBuilder builder, Field field, IFieldRegistration fieldRegistration) {
+        var result = "result" + GenerateProtocolFile.index.getAndIncrement();
+        if (isPrimitiveField(field)) {
+            builder.append(StringUtils.format("short {} = 0;", result));
+        } else {
+            builder.append(StringUtils.format("Short {} = Short.valueOf((short) 0);", result));
         }
         return result;
     }

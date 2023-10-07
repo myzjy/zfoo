@@ -18,7 +18,6 @@ import com.zfoo.net.core.HostAndPort;
 import com.zfoo.net.handler.GatewayRouteHandler;
 import com.zfoo.net.handler.codec.tcp.TcpCodecHandler;
 import com.zfoo.net.handler.idle.ServerIdleHandler;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.session.Session;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -28,13 +27,12 @@ import java.util.function.BiFunction;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class GatewayServer extends AbstractServer<SocketChannel> {
 
-    private BiFunction<Session, IPacket, Boolean> packetFilter;
+    private BiFunction<Session, Object, Boolean> packetFilter;
 
-    public GatewayServer(HostAndPort host, @Nullable BiFunction<Session, IPacket, Boolean> packetFilter) {
+    public GatewayServer(HostAndPort host, @Nullable BiFunction<Session, Object, Boolean> packetFilter) {
         super(host);
         this.packetFilter = packetFilter;
     }

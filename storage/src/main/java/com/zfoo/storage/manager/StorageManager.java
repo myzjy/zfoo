@@ -26,6 +26,7 @@ import com.zfoo.storage.config.StorageConfig;
 import com.zfoo.storage.interpreter.data.StorageEnum;
 import com.zfoo.storage.model.IStorage;
 import com.zfoo.storage.model.StorageDefinition;
+import com.zfoo.storage.util.function.Func1;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -47,7 +48,6 @@ import java.util.stream.Collectors;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class StorageManager implements IStorageManager {
 
@@ -104,6 +104,11 @@ public class StorageManager implements IStorageManager {
             var allRelevantClass = new HashSet<Class<?>>();
             resourceDefinitionMap.values().forEach(it -> allRelevantClass.addAll(ClassUtils.relevantClass(it.getClazz())));
             for (var clazz : allRelevantClass) {
+                if (clazz.isRecord()) {
+                    continue;
+                }
+                ReflectionUtils.assertIsPojoClass(clazz);
+                ReflectionUtils.publicEmptyConstructor(clazz);
                 var fieldList = ReflectionUtils.notStaticAndTransientFields(clazz);
                 for (var field : fieldList) {
                     if (Modifier.isPublic(field.getModifiers())) {
@@ -113,7 +118,7 @@ public class StorageManager implements IStorageManager {
 
                     var setMethodName = StringUtils.EMPTY;
                     try {
-                        setMethodName = ReflectionUtils.fieldToSetMethod(clazz, field);
+                        setMethodName = FieldUtils.fieldToSetMethod(clazz, field);
                     } catch (Exception e) {
                         // 没有setMethod是正确的
                     }
@@ -153,7 +158,7 @@ public class StorageManager implements IStorageManager {
 
                 Type[] types = ((ParameterizedType) type).getActualTypeArguments();
 
-                // @ResInjection
+                // @StorageAutowired
                 // Storage<Integer, ActivityResource> resources;
                 Class<?> keyClazz = (Class<?>) types[0];
 
@@ -191,17 +196,32 @@ public class StorageManager implements IStorageManager {
         }
     }
 
+    public <T> List<T> getList(Class<T> clazz) {
+        IStorage<?, ?> storage = getStorage(clazz);
+        return (List<T>) storage.getAll();
+    }
+
+    public <T, INDEX> List<T> getIndexes(Class<T> clazz, Func1<T, INDEX> func, INDEX index) {
+        var storage = getStorage(clazz);
+        return storage.getIndexes(func, index);
+    }
+
+    public <T, K> T get(Class<T> clazz, K id) {
+        var storage = getStorage(clazz);
+        return storage.get(id);
+    }
+
     @Override
-    public IStorage<?, ?> getStorage(Class<?> clazz) {
+    public <K, V, T extends IStorage<K, V>> T getStorage(Class<V> clazz) {
         var storage = storageMap.get(clazz);
         if (storage == null) {
             throw new RunException("There is no [{}] defined Storage and unable to get it", clazz.getCanonicalName());
         }
         if (storage.isRecycle()) {
-            // Storage没有使用，为了节省内存提前释放了它；只有使用ResInjection注解的Storage才能被动态获取或者关闭配置recycle属性
-            logger.warn("Storage [{}] is not used, it was freed to save memory; use @ResInjection or turn off recycle configuration", clazz.getCanonicalName());
+            // Storage没有使用，为了节省内存提前释放了它；只有使用@StorageAutowired注解的Storage才能被动态获取或者关闭配置recycle属性
+            logger.warn("Storage [{}] is not used, it was freed to save memory; use @StorageAutowired or turn off recycle configuration", clazz.getCanonicalName());
         }
-        return storage;
+        return (T) storage;
     }
 
     @Override

@@ -20,7 +20,6 @@ import java.util.Map;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public interface IStorageManager {
 
@@ -39,7 +38,7 @@ public interface IStorageManager {
      */
     void initAfter();
 
-    IStorage<?, ?> getStorage(Class<?> clazz);
+    <K, V, T extends IStorage<K, V>> T  getStorage(Class<V> clazz);
 
     Map<Class<?>, IStorage<?, ?>> storageMap();
 

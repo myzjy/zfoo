@@ -21,6 +21,8 @@ import com.zfoo.storage.interpreter.ResourceInterpreter;
 import com.zfoo.storage.model.IStorage;
 import com.zfoo.storage.model.IdDef;
 import com.zfoo.storage.model.IndexDef;
+import com.zfoo.storage.util.LambdaUtils;
+import com.zfoo.storage.util.function.Func1;
 import org.springframework.lang.Nullable;
 
 import java.io.InputStream;
@@ -28,62 +30,64 @@ import java.util.*;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class StorageObject<K, V> implements IStorage<K, V> {
-
-    private Map<K, V> dataMap = new HashMap<>();
+    private Map<K, V> dataMap = new HashMap<>(64);
     // 非唯一索引
-    protected Map<String, Map<Object, List<V>>> indexMap = new HashMap<>();
+    protected Map<String, Map<Object, List<V>>> indexMap = new HashMap<>(16);
     // 唯一索引
-    protected Map<String, Map<Object, V>> uniqueIndexMap = new HashMap<>();
+    protected Map<String, Map<Object, V>> uniqueIndexMap = new HashMap<>(16);
 
     protected Class<?> clazz;
     protected IdDef idDef;
     protected Map<String, IndexDef> indexDefMap;
-    // 当前配置表是否在当前项目中使用，没有被使用的会清楚data数据，以达到节省内存的目的
+    // 当前配置表是否在当前项目中使用，没有被使用的会清除data数据，以达到节省内存的目的
     protected boolean recycle = true;
 
 
     public static StorageObject<?, ?> parse(InputStream inputStream, Class<?> resourceClazz, String suffix) {
+        var storage = new StorageObject<>();
+        storage.clazz = resourceClazz;
+        var idDef = IdDef.valueOf(resourceClazz);
+        storage.idDef = idDef;
+        storage.indexDefMap = Collections.unmodifiableMap(IndexDef.createResourceIndexes(resourceClazz));
+
         try {
-            var storage = new StorageObject<>();
-            storage.clazz = resourceClazz;
-            var idDef = IdDef.valueOf(resourceClazz);
-            storage.idDef = idDef;
-            storage.indexDefMap = IndexDef.createResourceIndexes(resourceClazz);
             var list = ResourceInterpreter.read(inputStream, resourceClazz, suffix);
-            for (var object : list) {
-                storage.put(object);
-            }
-            var idType = idDef.getField().getType();
-            if (idType == int.class || idType == Integer.class) {
-                return new StorageInt<>(storage);
-            } else if (idType == long.class || idType == Long.class) {
-                return new StorageLong<>(storage);
-            } else {
-                return storage;
-            }
+            storage.putAll(list);
         } catch (Throwable e) {
             throw new RuntimeException(e.getMessage(), e);
         } finally {
             IOUtils.closeIO(inputStream);
         }
+
+        var idType = idDef.getField().getType();
+        if (idType == int.class || idType == Integer.class) {
+            return new StorageInt<>(storage);
+        } else if (idType == long.class || idType == Long.class) {
+            return new StorageLong<>(storage);
+        } else {
+            return storage;
+        }
     }
 
     @Override
-    public boolean contain(K key) {
-        return dataMap.containsKey(key);
+    public boolean contain(K id) {
+        return dataMap.containsKey(id);
     }
 
     @Override
-    public boolean contain(int key) {
-        return contain((K) Integer.valueOf(key));
+    public boolean contain(int id) {
+        @SuppressWarnings("unchecked")
+        var key = (K) Integer.valueOf(id);
+        return contain(key);
     }
 
     @Override
-    public boolean contain(long key) {
-        return contain((K) Long.valueOf(key));
+    public boolean contain(long id) {
+        @SuppressWarnings("unchecked")
+        var key = (K) Long.valueOf(id);
+        return contain(key);
     }
 
     @Override
@@ -95,12 +99,16 @@ public class StorageObject<K, V> implements IStorage<K, V> {
 
     @Override
     public V get(int id) {
-        return get((K) Integer.valueOf(id));
+        @SuppressWarnings("unchecked")
+        var key = (K) Integer.valueOf(id);
+        return get(key);
     }
 
     @Override
     public V get(long id) {
-        return get((K) Long.valueOf(id));
+        @SuppressWarnings("unchecked")
+        var key = (K) Long.valueOf(id);
+        return get(key);
     }
 
     @Override
@@ -129,6 +137,12 @@ public class StorageObject<K, V> implements IStorage<K, V> {
     }
 
     @Override
+    public List<V> getList() {
+        Collection<V> all = getAll();
+        return all.stream().toList();
+    }
+
+    @Override
     public Map<K, V> getData() {
         return Collections.unmodifiableMap(dataMap);
     }
@@ -139,10 +153,11 @@ public class StorageObject<K, V> implements IStorage<K, V> {
     }
 
     @Override
-    public List<V> getIndex(String indexName, Object key) {
+    public <INDEX> List<V> getIndexes(Func1<V, INDEX> func, INDEX index) {
+        String indexName = LambdaUtils.getFieldName(func);
         var indexValues = indexMap.get(indexName);
         AssertionUtils.notNull(indexValues, "The index of [indexName:{}] does not exist in the static resource [resource:{}]", indexName, clazz.getSimpleName());
-        var values = indexValues.get(key);
+        var values = indexValues.get(index);
         if (CollectionUtils.isEmpty(values)) {
             return Collections.emptyList();
         }
@@ -151,10 +166,11 @@ public class StorageObject<K, V> implements IStorage<K, V> {
 
     @Nullable
     @Override
-    public V getUniqueIndex(String uniqueIndexName, Object key) {
+    public <INDEX> V getUniqueIndex(Func1<V, INDEX> func, INDEX index) {
+        String uniqueIndexName = LambdaUtils.getFieldName(func);
         var indexValueMap = uniqueIndexMap.get(uniqueIndexName);
         AssertionUtils.notNull(indexValueMap, "There is no a unique index for [uniqueIndexName:{}] in the static resource [resource:{}]", uniqueIndexName, clazz.getSimpleName());
-        var value = indexValueMap.get(key);
+        var value = indexValueMap.get(index);
         return value;
     }
 
@@ -163,37 +179,38 @@ public class StorageObject<K, V> implements IStorage<K, V> {
         return dataMap.size();
     }
 
-    public V put(Object value) {
-        var key = (K) ReflectionUtils.getField(idDef.getField(), value);
+    public void putAll(List<?> values) {
+        for (var value: values) {
+            @SuppressWarnings("unchecked")
+            var id = (K) ReflectionUtils.getField(idDef.getField(), value);
 
-        if (key == null) {
-            throw new RuntimeException("There is an item with an unconfigured id in the static resource");
-        }
-
-        if (dataMap.containsKey(key)) {
-            throw new RuntimeException(StringUtils.format("Duplicate [id:{}] of static resource [resource:{}]", key, clazz.getSimpleName()));
-        }
-
-        // 添加资源
-        var result = dataMap.put(key, (V) value);
-
-        // 添加索引
-        for (var def : indexDefMap.values()) {
-            // 使用field的名称作为索引的名称
-            var indexKey = def.getField().getName();
-            var indexValue = ReflectionUtils.getField(def.getField(), value);
-            if (def.isUnique()) {// 唯一索引
-                var index = uniqueIndexMap.computeIfAbsent(indexKey, k -> new HashMap<>());
-                if (index.put(indexValue, (V) value) != null) {
-                    throw new RuntimeException(StringUtils.format("Duplicate unique index [index:{}][value:{}] of static resource [class:{}]", indexKey, indexValue, clazz.getName()));
+            if (id == null) {
+                throw new RuntimeException("There is an item with an unconfigured id in the static resource");
+            }
+            if (dataMap.containsKey(id)) {
+                throw new RuntimeException(StringUtils.format("Duplicate [id:{}] of static resource [resource:{}]", id, clazz.getSimpleName()));
+            }
+            // 添加资源
+            @SuppressWarnings("unchecked")
+            var v = (V) value;
+            dataMap.put(id, v);
+            // 添加索引
+            for (var def : indexDefMap.values()) {
+                // 使用field的名称作为索引的名称
+                var indexKey = def.getField().getName();
+                var indexValue = ReflectionUtils.getField(def.getField(), v);
+                if (def.isUnique()) {
+                    var uniqueIndex = uniqueIndexMap.computeIfAbsent(indexKey, it -> new HashMap<>(values.size()));
+                    if (uniqueIndex.put(indexValue, v) != null) {
+                        throw new RuntimeException(StringUtils.format("Duplicate unique index [index:{}][value:{}] of static resource [class:{}]", indexKey, indexValue, clazz.getName()));
+                    }
+                } else {
+                    var index = indexMap.computeIfAbsent(indexKey, it -> new HashMap<>(values.size()));
+                    var list = index.computeIfAbsent(indexValue, it -> new ArrayList<V>());
+                    list.add(v);
                 }
-            } else {// 不是唯一索引
-                var index = indexMap.computeIfAbsent(indexKey, k -> new HashMap<>());
-                var list = index.computeIfAbsent(indexValue, k -> new ArrayList<V>());
-                list.add((V) value);
             }
         }
-        return result;
     }
 
 }

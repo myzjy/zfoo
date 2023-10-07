@@ -15,7 +15,6 @@ package com.zfoo.net.consumer.balancer;
 
 import com.zfoo.net.NetContext;
 import com.zfoo.net.consumer.registry.RegisterVO;
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.net.session.Session;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.registration.ProtocolModule;
@@ -28,7 +27,6 @@ import java.util.function.Consumer;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class AbstractConsumerLoadBalancer implements IConsumerLoadBalancer {
 
@@ -45,10 +43,6 @@ public abstract class AbstractConsumerLoadBalancer implements IConsumerLoadBalan
                 throw new RuntimeException(StringUtils.format("Load balancer is not recognized[{}]", loadBalancer));
         }
         return balancer;
-    }
-
-    public List<Session> getSessionsByPacket(IPacket packet) {
-        return getSessionsByModule(ProtocolManager.moduleByProtocol(packet.getClass()));
     }
 
     public List<Session> getSessionsByModule(ProtocolModule module) {
@@ -68,7 +62,7 @@ public abstract class AbstractConsumerLoadBalancer implements IConsumerLoadBalan
         return list;
     }
 
-    public boolean sessionHasModule(Session session, IPacket packet) {
+    public boolean sessionHasModule(Session session, Object packet) {
         var consumerAttribute = session.getConsumerAttribute();
         if (Objects.isNull(consumerAttribute)) {
             return false;

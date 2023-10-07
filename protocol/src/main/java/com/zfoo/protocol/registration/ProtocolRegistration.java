@@ -19,13 +19,14 @@ import com.zfoo.protocol.registration.field.IFieldRegistration;
 import com.zfoo.protocol.serializer.reflect.ISerializer;
 import com.zfoo.protocol.util.ReflectionUtils;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class ProtocolRegistration implements IProtocolRegistration {
 
@@ -39,8 +40,19 @@ public class ProtocolRegistration implements IProtocolRegistration {
      */
     private IFieldRegistration[] fieldRegistrations;
 
-    public ProtocolRegistration() {
+    // 兼容相关
+    private boolean compatible;
+    private int predictionLength;
 
+    public ProtocolRegistration(short id, byte module, Constructor<?> constructor, Field[] fields, IFieldRegistration[] fieldRegistrations) {
+        this.id = id;
+        this.module = module;
+        this.constructor = constructor;
+        this.fields = fields;
+        this.fieldRegistrations = fieldRegistrations;
+
+        this.compatible = Arrays.stream(fields).anyMatch(it -> it.isAnnotationPresent(Compatible.class));
+        this.predictionLength = Arrays.stream(fieldRegistrations).mapToInt(it -> it.predictionLength()).sum();
     }
 
     @Override
@@ -58,46 +70,92 @@ public class ProtocolRegistration implements IProtocolRegistration {
         return constructor;
     }
 
-
     @Override
-    public void write(ByteBuf buffer, Object packet) {
+    public void write(ByteBuf byteBuf, Object packet) {
         if (packet == null) {
-            ByteBufUtils.writeBoolean(buffer, false);
+            // equals with ByteBufUtils.writeInt(byteBuf, 0);
+            byteBuf.writeByte(0);
             return;
         }
 
-        ByteBufUtils.writeBoolean(buffer, true);
+        var beforeWriteIndex = byteBuf.writerIndex();
+
+        if (compatible) {
+            ByteBufUtils.writeInt(byteBuf, predictionLength);
+        } else {
+            // equals with ByteBufUtils.writeInt(byteBuf, -1);
+            byteBuf.writeByte(1);
+        }
 
         for (int i = 0, length = fields.length; i < length; i++) {
             Field field = fields[i];
             IFieldRegistration packetFieldRegistration = fieldRegistrations[i];
             ISerializer serializer = packetFieldRegistration.serializer();
             Object fieldValue = ReflectionUtils.getField(field, packet);
-            serializer.writeObject(buffer, fieldValue, packetFieldRegistration);
+            serializer.writeObject(byteBuf, fieldValue, packetFieldRegistration);
+        }
+
+        if (compatible) {
+            // 因为写入的是可变长的int，如果预留的位置过多，则清除多余的位置
+            ByteBufUtils.adjustPadding(byteBuf, predictionLength, beforeWriteIndex);
         }
     }
 
     @Override
-    public Object read(ByteBuf buffer) {
-        if (!ByteBufUtils.readBoolean(buffer)) {
+    public Object read(ByteBuf byteBuf) {
+        // length为-1代表协议没有可兼容的部分，0代表为空对象，正数代表需要兼容的协议长度
+        var length = ByteBufUtils.readInt(byteBuf);
+        if (length == 0) {
             return null;
         }
-        Object object = ReflectionUtils.newInstance(constructor);
+        Object object = null;
 
-        for (int i = 0, length = fields.length; i < length; i++) {
-            Field field = fields[i];
-            // 协议向后兼容
-            if (field.isAnnotationPresent(Compatible.class) && !buffer.isReadable()) {
-                break;
+        var beforeReadIndex = byteBuf.readerIndex();
+        var packetClazz = constructor.getDeclaringClass();
+        if (packetClazz.isRecord()) {
+            var originFields = ProtocolAnalysis.getFields(packetClazz);
+            var constructorParams = new Object[originFields.size()];
+            for (int i = 0, j = fields.length; i < j; i++) {
+                var field = fields[i];
+                var index = originFields.indexOf(field);
+                var packetFieldRegistration = fieldRegistrations[i];
+
+                // 协议向后兼容
+                if (field.isAnnotationPresent(Compatible.class)) {
+                    if (!ByteBufUtils.compatibleRead(byteBuf, beforeReadIndex, length)) {
+                        constructorParams[index] = packetFieldRegistration.defaultValue();
+                        continue;
+                    }
+                }
+                ISerializer serializer = packetFieldRegistration.serializer();
+                Object fieldValue = serializer.readObject(byteBuf, packetFieldRegistration);
+                constructorParams[index] = fieldValue;
             }
-            IFieldRegistration packetFieldRegistration = fieldRegistrations[i];
-            ISerializer serializer = packetFieldRegistration.serializer();
-            Object fieldValue = serializer.readObject(buffer, packetFieldRegistration);
-            ReflectionUtils.setField(field, object, fieldValue);
+            object = ReflectionUtils.newInstance(constructor, constructorParams);
+        } else {
+            object = ReflectionUtils.newInstance(constructor);
+            for (int i = 0, j = fields.length; i < j; i++) {
+                Field field = fields[i];
+                IFieldRegistration packetFieldRegistration = fieldRegistrations[i];
+                ISerializer serializer = packetFieldRegistration.serializer();
+                // 协议向后兼容
+                if (field.isAnnotationPresent(Compatible.class)) {
+                    if (!ByteBufUtils.compatibleRead(byteBuf, beforeReadIndex, length)) {
+                        ReflectionUtils.setField(field, object, packetFieldRegistration.defaultValue());
+                        continue;
+                    }
+                }
+                Object fieldValue = serializer.readObject(byteBuf, packetFieldRegistration);
+                ReflectionUtils.setField(field, object, fieldValue);
+            }
         }
+
+        if (length > 0) {
+            byteBuf.readerIndex(beforeReadIndex + length);
+        }
+
         return object;
     }
-
 
     public short getId() {
         return id;
@@ -139,4 +197,19 @@ public class ProtocolRegistration implements IProtocolRegistration {
         this.constructor = constructor;
     }
 
+    public boolean isCompatible() {
+        return compatible;
+    }
+
+    public void setCompatible(boolean compatible) {
+        this.compatible = compatible;
+    }
+
+    public int getPredictionLength() {
+        return predictionLength;
+    }
+
+    public void setPredictionLength(int predictionLength) {
+        this.predictionLength = predictionLength;
+    }
 }

@@ -26,7 +26,6 @@ import java.lang.reflect.Field;
  * 对应于ObjectProtocolSerializer
  *
  * @author godotg
- * @version 3.0
  */
 public class EnhanceObjectProtocolSerializer implements IEnhanceSerializer {
 
@@ -42,6 +41,15 @@ public class EnhanceObjectProtocolSerializer implements IEnhanceSerializer {
         var result = "result" + GenerateProtocolFile.index.getAndIncrement();
         var protocolName = getProtocolClassCanonicalName(objectProtocolField.getProtocolId());
         builder.append(StringUtils.format("{} {} = ({}){}.read($1);", protocolName, result, protocolName, EnhanceUtils.getProtocolRegistrationFieldNameByProtocolId(objectProtocolField.getProtocolId())));
+        return result;
+    }
+
+    @Override
+    public String defaultValue(StringBuilder builder, Field field, IFieldRegistration fieldRegistration) {
+        var objectProtocolField = (ObjectProtocolField) fieldRegistration;
+        var result = "result" + GenerateProtocolFile.index.getAndIncrement();
+        var protocolName = getProtocolClassCanonicalName(objectProtocolField.getProtocolId());
+        builder.append(StringUtils.format("{} {} = null;", protocolName, result));
         return result;
     }
 

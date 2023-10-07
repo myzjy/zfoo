@@ -21,10 +21,9 @@ import java.util.Objects;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1120, enhance = false)
-public class CM_Map implements IPacket {
+public class CM_Map {
 
     private Map<Integer, Integer> map;
 

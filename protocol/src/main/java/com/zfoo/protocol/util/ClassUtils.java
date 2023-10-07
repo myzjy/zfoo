@@ -20,14 +20,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.net.*;
-import java.util.*;
+import java.net.JarURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public abstract class ClassUtils {
 
@@ -40,7 +47,6 @@ public abstract class ClassUtils {
     public final static String JAR_PROTOCOL = "jar";
 
     public final static String JAR_URL_SEPARATOR = "!/";
-
 
     public static Class<?> forName(String className) {
         try {
@@ -374,11 +380,8 @@ public abstract class ClassUtils {
         }
 
         // 是否为一个简单的javabean，为了防止不同层对象混用造成潜在的并发问题，特别是网络层和po层混用
-        ReflectionUtils.assertIsPojoClass(clazz);
         // 不能是泛型类
-        AssertionUtils.isTrue(ArrayUtils.isEmpty(clazz.getTypeParameters()), "[class:{}]不能是泛型类", clazz.getCanonicalName());
-        // 必须要有一个空的构造器
-        ReflectionUtils.publicEmptyConstructor(clazz);
+        AssertionUtils.isTrue(ArrayUtils.isEmpty(clazz.getTypeParameters()), "[class:{}] cannot be generic class", clazz.getCanonicalName());
 
         var filedList = ReflectionUtils.notStaticAndTransientFields(clazz);
 

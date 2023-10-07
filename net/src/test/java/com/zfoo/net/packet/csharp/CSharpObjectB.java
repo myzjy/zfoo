@@ -13,15 +13,13 @@
 
 package com.zfoo.net.packet.csharp;
 
-import com.zfoo.net.packet.IPacket;
 import com.zfoo.protocol.anno.Protocol;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Protocol(id = 1167)
-public class CSharpObjectB implements IPacket {
+public class CSharpObjectB {
 
     public boolean flag;
 

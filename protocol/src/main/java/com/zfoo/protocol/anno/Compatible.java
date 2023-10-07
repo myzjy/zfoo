@@ -16,13 +16,12 @@ import java.lang.annotation.*;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 public @interface Compatible {
 
-    int order();
+    int value();
 
 }

@@ -1,3 +1,23 @@
+#### 注意
+
+- The main branch is a development version for Java 21 and GraalVM. The stable version is [zfoo-java-11-17](https://github.com/zfoo-project/zfoo/tree/zfoo-java-11-17)
+- Upgrade process
+  - reimport not found classes
+  - no need to inherit IPacket anymore
+  - SafeRunnable has been deleted, please use ThreadUtils.safeRunnable()
+  - rename interfaces and annotations，Storage -> IStorage，@Resource -> @Storage，@ResInjection -> @StorageAutowired
+  - rename interfaces and annotations，@EntityCachesInjection -> @EntityCacheAutowired，@EntityCaches -> @EntityCache
+
+```
+- 主干main是当前是面向java 21和GraalVM的开发版本，稳定版本请使用 [zfoo-java-11-17](https://github.com/zfoo-project/zfoo/tree/zfoo-java-11-17)
+- 升级流程
+    - 重新导入找不到的类
+    - 不需要再继承IPacket
+    - SafeRunnable删除了，请使用ThreadUtils.safeRunnable()
+    - 重命名接口和注解，Storage -> IStorage，@Resource -> @Storage，@ResInjection -> @StorageAutowired
+    - 重命名接口和注解，@EntityCachesInjection -> @EntityCacheAutowired，@EntityCaches -> @EntityCache
+```
+
 #### 为什么部署的时候才用main，平时开发的时候从test启动
 
 - 可以很好的隔离部署环境和开发测试环境
@@ -66,7 +86,7 @@ SignalAttachment的signalId就是用于RPC的同步和异步的信号，通过�
 
 #### zfoo的RPC协议格式为什么没有dubbo复杂
 
-- duboo没有自己实现的比较好的协议所以要支持其它协议，zfoo有自己实现的协议已经最快，只需要专注自己的协议和protobuf，兼容就比较简单
+- duboo没有自己实现的比较好的协议所以要支持其它协议，zfoo有自己实现的协议已经极快了，只需要专注自己的协议和protobuf，兼容就比较简单
 - zfoo作为rpc协议是，length | packet | attachment，当作普通服务器协议就是，length | packet
 - attachment能装很多东西，算是协议上的多态，就不需要dubbo那么复杂的设计了
 

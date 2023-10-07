@@ -32,7 +32,6 @@ import java.util.Map;
  * CN: 生成协议的时候，协议的文档注释和字段注释会使用这个类
  *
  * @author godotg
- * @version 3.0
  */
 public abstract class GenerateProtocolNote {
 
@@ -110,9 +109,9 @@ public abstract class GenerateProtocolNote {
         for (var protocolRegistration : protocolRegistrations) {
             var protocolClazz = protocolRegistration.protocolConstructor().getDeclaringClass();
             var classNote = StringUtils.EMPTY;
-            var protocolClass = protocolClazz.getDeclaredAnnotation(Protocol.class);
-            if (protocolClass != null && StringUtils.isNotEmpty(protocolClass.note())) {
-                classNote = StringUtils.trim(protocolClass.note());
+            var protocolClass = protocolClazz.getDeclaredAnnotation(Note.class);
+            if (protocolClass != null && StringUtils.isNotEmpty(protocolClass.value())) {
+                classNote = StringUtils.trim(protocolClass.value());
             }
 
             var fieldNoteMap = new HashMap<String, String>();

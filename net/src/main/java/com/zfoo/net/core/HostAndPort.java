@@ -16,11 +16,9 @@ import com.zfoo.protocol.collection.CollectionUtils;
 import com.zfoo.protocol.util.StringUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class HostAndPort {
 
@@ -70,7 +68,7 @@ public class HostAndPort {
     public static String toHostAndPortListStr(Collection<HostAndPort> list) {
         var urlList = list.stream()
                 .map(it -> it.toHostAndPortStr())
-                .collect(Collectors.toList());
+                .toList();
         return StringUtils.joinWith(StringUtils.COMMA, urlList.toArray());
     }
 

@@ -20,11 +20,9 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * @author godotg
- * @version 3.0
  */
 @Ignore
 public class SimpleCacheTest {
@@ -34,7 +32,7 @@ public class SimpleCacheTest {
         var cache = SimpleCache.build(3000, 6000, 100, new Function<List<String>, List<Pair<String, String>>>() {
             @Override
             public List<Pair<String, String>> apply(List<String> keyList) {
-                return keyList.stream().map(it -> new Pair<>(it, "new-" + it + "-value")).collect(Collectors.toList());
+                return keyList.stream().map(it -> new Pair<>(it, "new-" + it + "-value")).toList();
             }
         }, key -> "empty");
 

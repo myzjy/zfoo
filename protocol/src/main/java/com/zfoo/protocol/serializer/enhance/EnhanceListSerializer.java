@@ -25,7 +25,6 @@ import java.lang.reflect.Field;
 
 /**
  * @author godotg
- * @version 3.0
  */
 public class EnhanceListSerializer implements IEnhanceSerializer {
 
@@ -74,6 +73,14 @@ public class EnhanceListSerializer implements IEnhanceSerializer {
         builder.append(StringUtils.format("for(int {}=0; {}<{}; {}++){", i, i, size, i));
         var readObject = EnhanceUtils.enhanceSerializer(listField.getListElementRegistration().serializer()).readObject(builder, field, listField.getListElementRegistration());
         builder.append(StringUtils.format("{}.add({});}", list, readObject));
+        return list;
+    }
+
+    @Override
+    public String defaultValue(StringBuilder builder, Field field, IFieldRegistration fieldRegistration) {
+        var listField = (ListField) fieldRegistration;
+        var list = "list" + GenerateProtocolFile.index.getAndIncrement();
+        builder.append(StringUtils.format("List {} = CollectionUtils.newList(0);", list));
         return list;
     }
 

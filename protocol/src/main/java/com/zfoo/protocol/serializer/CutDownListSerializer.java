@@ -276,7 +276,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                             builder.append(StringUtils.format("buffer.writePacketArray({}, {})", objectStr, protocolId)).append(LS);
                             break;
                         case Lua:
-                            builder.append(StringUtils.format("buffer:writePacketArray({}, {})", objectStr, protocolId)).append(LS);
+                            builder.append(StringUtils.format("{}", objectStr, protocolId)).append(LS);
                             break;
                         case CSharp:
                             builder.append(StringUtils.format("buffer.WritePacketList({}, {});", objectStr, protocolId)).append(LS);
@@ -569,7 +569,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                             builder.append(StringUtils.format("{} = buffer.readPacketArray({})", list, protocolId)).append(LS);
                             break;
                         case Lua:
-                            builder.append(StringUtils.format("local {} = buffer:readPacketArray({})", list, protocolId)).append(LS);
+                            builder.append(StringUtils.format("{}", list)).append(LS);
                             break;
                         case CSharp:
                             builder.append(StringUtils.format("var {} = buffer.ReadPacketList<{}>({});", list, EnhanceObjectProtocolSerializer.getProtocolClassSimpleName(protocolId), protocolId)).append(LS);

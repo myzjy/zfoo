@@ -10,7 +10,6 @@
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and limitations under the License.
  */
-
 package com.zfoo.protocol.serializer.lua;
 
 import com.zfoo.protocol.registration.field.IFieldRegistration;
@@ -21,9 +20,12 @@ import java.lang.reflect.Field;
  * @author godotg
  */
 public interface ILuaSerializer {
-
     void writeObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration);
 
-    String readObject(StringBuilder builder, int deep, Field field, IFieldRegistration fieldRegistration);
+    void initWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String fieldNote);
+    void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String protocolClazzName);
 
+    String listObjectString(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration);
+
+    String readObject(StringBuilder builder, int deep, Field field, IFieldRegistration fieldRegistration,String objectStr);
 }

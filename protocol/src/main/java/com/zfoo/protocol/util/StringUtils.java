@@ -75,6 +75,7 @@ public abstract class StringUtils {
     public static final String SHARP_REGEX = "\\#";
 
     public static final String DOLLAR = "$";    // 美元符号
+    public static final String DOUHAO = ",";    // 分号
 
     public static final String EMPTY_JSON = "{}";
 

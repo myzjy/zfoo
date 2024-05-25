@@ -23,6 +23,7 @@ import com.zfoo.protocol.util.StringUtils;
 import java.lang.reflect.Field;
 
 import static com.zfoo.protocol.util.FileUtils.LS;
+import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
  * @author godotg
@@ -60,7 +61,32 @@ public class LuaSetSerializer implements ILuaSerializer {
     }
 
     @Override
-    public String readObject(StringBuilder builder, int deep, Field field, IFieldRegistration fieldRegistration) {
+    public void initWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String fieldNote) {
+        GenerateProtocolFile.addTab(builder, deep);
+        builder.append("---@type number").append(LS);
+        builder.append(TAB.repeat(1));
+        builder.append(StringUtils.format("self.{} = 0", objectStr)).append(LS);
+    }
+
+    @Override
+    public String listObjectString(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
+        return "";
+    }
+    @Override
+    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String protocolClazzName) {
+        GenerateProtocolFile.addTab(builder, deep);
+        var typeName = field.getGenericType().getTypeName();
+        var typeNameList = typeName.split("\\.");
+        var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
+        builder.append(StringUtils.format("{}", objectStr)).append(LS);
+        builder.append(StringUtils.format("---@return {} {}", filedName, objectStr)).append(LS);
+        builder.append(StringUtils.format("function {}:get{}()", filedName, filedName)).append(LS);
+        builder.append(TAB);
+        builder.append(StringUtils.format("return self.{}", field.getName())).append(LS);
+        builder.append("end").append(LS);
+    }
+    @Override
+    public String readObject(StringBuilder builder, int deep, Field field, IFieldRegistration fieldRegistration,String objectStr) {
         GenerateProtocolFile.addTab(builder, deep);
         var cutDown = CutDownSetSerializer.getInstance().readObject(builder, field, fieldRegistration, CodeLanguage.Lua);
         if (cutDown != null) {
@@ -82,7 +108,7 @@ public class LuaSetSerializer implements ILuaSerializer {
         String i = "index" + GenerateProtocolFile.index.getAndIncrement();
         builder.append(StringUtils.format("for {} = 1, {} do", i, size)).append(LS);
         String readObject = GenerateLuaUtils.luaSerializer(setField.getSetElementRegistration().serializer())
-                .readObject(builder, deep + 2, field, setField.getSetElementRegistration());
+                .readObject(builder, deep + 2, field, setField.getSetElementRegistration(),objectStr);
         GenerateProtocolFile.addTab(builder, deep + 2);
         builder.append(StringUtils.format("table.insert({}, {})", result, readObject)).append(LS);
         GenerateProtocolFile.addTab(builder, deep + 1);

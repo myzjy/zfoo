@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+option protobuf = "protobuf.xml";
+
+enum ProtocolManager {
+    EmptyObject = 0;
+    VeryBigObject = 1;
+    ComplexObject = 100;
+    NormalObject = 101;
+    ObjectA = 102;
+    ObjectB = 103;
+    SimpleObject = 104;
+}

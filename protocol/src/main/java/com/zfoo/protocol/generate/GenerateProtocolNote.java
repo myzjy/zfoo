@@ -90,7 +90,7 @@ public abstract class GenerateProtocolNote {
                 fieldNote = StringUtils.format("// {}", fieldNote).replace("\n", "\n// ");
                 break;
             case Lua:
-                fieldNote = StringUtils.format("-- {}", fieldNote).replace("\n", "\n-- ");
+                fieldNote = StringUtils.format("--- {}", fieldNote).replace("\n", "\n-- ");
                 break;
             case Python:
             case GdScript:

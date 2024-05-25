@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option protobuf = "protobuf.xml";
+
+import "common.proto";
+
+// id = 0
+message EmptyObject {
+}
+

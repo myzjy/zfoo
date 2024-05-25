@@ -1,33 +1,40 @@
-{}
-local {} = {}
-
-function {}:new({})
-    local obj = {
-        {}
-    }
-    setmetatable(obj, self)
-    self.__index = self
-    return obj
+---@class {}
+local {} = class("{}")
+function {}:ctor()
+    {}
 end
 
+---@return {}
+function {}:new({})
+    {}
+    return self
+end
+
+---@return number
 function {}:protocolId()
     return {}
 end
 
-function {}:write(buffer, packet)
-    if buffer:writePacketFlag(packet) then
-        return
-    end
-    {}
+---@return string
+function {}:write()
+    local message = {
+        protocolId = self:protocolId(),
+        packet = {
+            {}
+        }
+    }
+    local jsonStr = JSON.encode(message)
+    return jsonStr
 end
 
-function {}:read(buffer)
-    if not(buffer:readBoolean()) then
-        return nil
-    end
-    local packet = {}:new()
+---@return {}
+function {}:read(data)
     {}
+    local packet = self:new(
+            {})
     return packet
 end
+
+{}
 
 return {}

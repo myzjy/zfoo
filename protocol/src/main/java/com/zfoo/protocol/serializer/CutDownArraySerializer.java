@@ -516,7 +516,7 @@ public class CutDownArraySerializer implements ICutDownSerializer {
                             builder.append(StringUtils.format("buffer.writePacketArray({}, {})", objectStr, protocolId)).append(LS);
                             break;
                         case Lua:
-                            builder.append(StringUtils.format("buffer:writePacketArray({}, {})", objectStr, protocolId)).append(LS);
+                            builder.append(StringUtils.format("{}", objectStr)).append(LS);
                             break;
                         case CSharp:
                             builder.append(StringUtils.format("buffer.WritePacketArray<{}>({}, {});", EnhanceObjectProtocolSerializer.getProtocolClassSimpleName(protocolId), objectStr, protocolId)).append(LS);

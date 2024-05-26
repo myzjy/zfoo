@@ -45,10 +45,8 @@ public class LuaBooleanSerializer implements ILuaSerializer {
     }
 
     @Override
-    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String protocolClazzName) {
-        GenerateProtocolFile.addTab(builder, deep);
-
-        builder.append(StringUtils.format("{}", objectStr)).append(LS);
+    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration, String protocolClazzName) {
+        builder.append(StringUtils.format("--- {}", objectStr)).append(LS);
         String result = Character.toUpperCase(field.getName().charAt(0)) + field.getName().substring(1);
         builder.append(StringUtils.format("---@return boolean {}", objectStr)).append(LS);
         builder.append(StringUtils.format("function {}:get{}()", protocolClazzName, result)).append(LS);
@@ -63,5 +61,15 @@ public class LuaBooleanSerializer implements ILuaSerializer {
         GenerateProtocolFile.addTab(builder, deep);
         builder.append(StringUtils.format("data.{}{}", field.getName(), objectStr)).append(LS);
         return result;
+    }
+    @Override
+    public void createReturnWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
+        var typeName = field.getGenericType().getTypeName();
+        var typeNameList = typeName.split("\\.");
+        var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
+        builder.append(StringUtils.format("---@param {} boolean {}", filedName, objectStr));
+        if (deep == 0) {
+            builder.append(LS);
+        }
     }
 }

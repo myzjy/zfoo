@@ -43,17 +43,8 @@ public class LuaObjectProtocolSerializer implements ILuaSerializer {
     }
 
     @Override
-    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String protocolClazzName) {
-        GenerateProtocolFile.addTab(builder, deep);
-        var typeName = field.getGenericType().getTypeName();
-        var typeNameList = typeName.split("\\.");
-        var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
-        builder.append(StringUtils.format("{}", objectStr)).append(LS);
-        builder.append(StringUtils.format("---@return {} {}", filedName, objectStr)).append(LS);
-        builder.append(StringUtils.format("function {}:get{}()", filedName, filedName)).append(LS);
-        builder.append(TAB);
-        builder.append(StringUtils.format("return self.{}", field.getName())).append(LS);
-        builder.append("end").append(LS);
+    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration, String protocolClazzName) {
+        LuaArraySerializer.GetTypeFiledName(builder, objectStr, field,protocolClazzName);
     }
 
     @Override
@@ -61,7 +52,7 @@ public class LuaObjectProtocolSerializer implements ILuaSerializer {
         var typeName = field.getGenericType().getTypeName();
         var typeNameList = typeName.split("\\.");
         var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
-        //builder.append(TAB.repeat(2));
+        builder.append(TAB.repeat(1));
         builder.append(StringUtils.format("local {}Packet = {}()", field.getName(), filedName)).append(LS);
         builder.append(TAB);
         builder.append(StringUtils.format("local {} = {}Packet:read(data.{})", field.getName(), field.getName(), field.getName())).append(LS);
@@ -75,5 +66,16 @@ public class LuaObjectProtocolSerializer implements ILuaSerializer {
         GenerateProtocolFile.addTab(builder, deep);
         builder.append(StringUtils.format("{}{}", field.getName(), objectStr)).append(LS);
         return result;
+    }
+
+    @Override
+    public void createReturnWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
+        var typeName = field.getGenericType().getTypeName();
+        var typeNameList = typeName.split("\\.");
+        var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
+        builder.append(StringUtils.format("---@param {} {} {}", field.getName(), filedName, objectStr));
+        if (deep == 0) {
+            builder.append(LS);
+        }
     }
 }

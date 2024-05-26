@@ -22,10 +22,13 @@ import java.lang.reflect.Field;
 public interface ILuaSerializer {
     void writeObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration);
 
-    void initWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String fieldNote);
-    void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String protocolClazzName);
+    void initWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration, String fieldNote);
+
+    void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration, String protocolClazzName);
+
+    void createReturnWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration);
 
     String listObjectString(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration);
 
-    String readObject(StringBuilder builder, int deep, Field field, IFieldRegistration fieldRegistration,String objectStr);
+    String readObject(StringBuilder builder, int deep, Field field, IFieldRegistration fieldRegistration, String objectStr);
 }

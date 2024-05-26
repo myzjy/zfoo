@@ -45,10 +45,9 @@ public class LuaDoubleSerializer implements ILuaSerializer {
     }
 
     @Override
-    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String protocolClazzName) {
-        GenerateProtocolFile.addTab(builder, deep);
+    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration, String protocolClazzName) {
         String result = Character.toUpperCase(field.getName().charAt(0)) + field.getName().substring(1);
-        builder.append(StringUtils.format("{}", objectStr)).append(LS);
+        builder.append(StringUtils.format("--- {}", objectStr)).append(LS);
         builder.append(StringUtils.format("---@return number {}", objectStr)).append(LS);
         builder.append(StringUtils.format("function {}:get{}()", protocolClazzName, result)).append(LS);
         builder.append(TAB);
@@ -62,5 +61,13 @@ public class LuaDoubleSerializer implements ILuaSerializer {
         GenerateProtocolFile.addTab(builder, deep);
         builder.append(StringUtils.format("data.{}{}", field.getName(), objectStr)).append(LS);
         return result;
+    }
+
+    @Override
+    public void createReturnWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
+        builder.append(StringUtils.format("---@param {} number {}", field.getName(), objectStr));
+        if (deep == 0) {
+            builder.append(LS);
+        }
     }
 }

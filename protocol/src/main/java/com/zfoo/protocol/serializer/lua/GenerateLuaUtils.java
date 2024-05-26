@@ -113,15 +113,17 @@ public abstract class GenerateLuaUtils {
         var writePacket = writePacket(registration);
         var readPacket = readPacket(registration);
         protocolTemplate = StringUtils.format(protocolTemplate,
-                                              protocolClazzName, // 1
-                                              protocolClazzName, // 2
-                                              protocolClazzName, // 3
-                                              protocolClazzName, // 4
-                                              valueKey.getValue().trim(), // 5
-                                              protocolClazzName, // 6
-                                              protocolClazzName, // 6
-                                              valueOfMethod.getKey().trim(), // 7
-                                              valueOfMethod.getValue().trim(), // 8
+                                              protocolClazzName, // 1 头部注解
+                                              protocolClazzName, // 2  头部类
+                                              protocolClazzName, // 3  头部类class中的类字符
+                                              protocolClazzName, // 4 ctor函数会被那个类调用
+                                              valueKey.getValue().trim(), // 5 ctor函数内的具体
+                                              //具体 函数字段 注解
+                                              createNewReturnPacket(registration),
+                                              protocolClazzName, // 6 new 函数的 return注解具体返回类型
+                                              protocolClazzName, // 6 new 函数会被那个类调用到
+                                              valueOfMethod.getKey().trim(), // 7 new函数字段
+                                              valueOfMethod.getValue().trim(), // 8 new 函数内具体方法
                                               protocolClazzName, // 9
                                               protocolId, //10
                                               protocolClazzName,
@@ -134,8 +136,12 @@ public abstract class GenerateLuaUtils {
                                               createGetPacket(registration,protocolClazzName),
                                               protocolClazzName,
                                               StringUtils.EMPTY_JSON);
+
+        var  str = Character.toLowerCase(protocolClazzName.charAt(0)) + protocolClazzName.substring(1);
+        var  str1 = Character.toLowerCase(GenerateProtocolPath.getCapitalizeProtocolPath(protocolId).charAt(0)) + GenerateProtocolPath.getCapitalizeProtocolPath(protocolId).substring(1);
+
         var protocolOutputPath = StringUtils.format("{}/{}/{}.lua"
-                , protocolOutputRootPath, GenerateProtocolPath.getCapitalizeProtocolPath(protocolId), protocolClazzName);
+                , protocolOutputRootPath,str1 , str);
         FileUtils.writeStringToFile(new File(protocolOutputPath), protocolTemplate, true);
     }
 
@@ -161,13 +167,13 @@ public abstract class GenerateLuaUtils {
             var field = fields[i];
             var fieldName = field.getName();
             // 生成注释
-            var fieldNote = GenerateProtocolNote.fieldNote(protocolId, fieldName, CodeLanguage.Lua);
-            if (StringUtils.isNotBlank(fieldNote)) {
-                luaBuilder.append(TAB + TAB).append(fieldNote).append(LS);
-            }
+            //var fieldNote = GenerateProtocolNote.fieldNote(protocolId, fieldName, CodeLanguage.Lua);
+            //if (StringUtils.isNotBlank(fieldNote)) {
+            //    luaBuilder.append(TAB).append(fieldNote).append(LS);
+            //}
             luaBuilder.append(TAB).append(StringUtils.format("self.{} = {}", fieldName, fieldName));
             // 生成类型的注释
-            luaBuilder.append(" -- ").append(field.getGenericType().getTypeName()).append(LS);
+            luaBuilder.append(" --- ").append(field.getGenericType().getTypeName()).append(LS);
         }
         return new Pair<>(valueOfParams, luaBuilder.toString());
     }
@@ -194,6 +200,12 @@ public abstract class GenerateLuaUtils {
         return new Pair<>(valueOfParams, luaBuilder.toString());
     }
 
+    /**
+     *  创建lua中的get 方法
+     * @param registration
+     * @param protocolClazzName
+     * @return
+     */
     private static String createGetPacket(ProtocolRegistration registration,String protocolClazzName) {
         var fields = registration.getFields();
         var fieldRegistrations = registration.getFieldRegistrations();
@@ -203,9 +215,24 @@ public abstract class GenerateLuaUtils {
             var field = fields[i];
             var fieldName = field.getName();
             var fieldRegistration = fieldRegistrations[i];
-            var fieldNote = GenerateProtocolNote.fieldNote(protocolId, fieldName, CodeLanguage.Lua);
+            var fieldNote = GenerateProtocolNote.fieldNote1(protocolId, fieldName, CodeLanguage.Lua);
             luaSerializer(fieldRegistration.serializer()).createGetWriterObject(luaBuilder, fieldNote, 1, field, fieldRegistration,protocolClazzName);
         }
+        return luaBuilder.toString();
+    }
+    private static String createNewReturnPacket(ProtocolRegistration registration) {
+        var fields = registration.getFields();
+        var fieldRegistrations = registration.getFieldRegistrations();
+        var luaBuilder = new StringBuilder();
+        var protocolId = registration.getId();
+        for (var i = 0; i < fields.length; i++) {
+            var field = fields[i];
+            var fieldName = field.getName();
+            var fieldRegistration = fieldRegistrations[i];
+            var fieldNote = GenerateProtocolNote.fieldNote1(protocolId, fieldName, CodeLanguage.Lua);
+            luaSerializer(fieldRegistration.serializer()).createReturnWriterObject(luaBuilder, fieldNote, i <= fields.length - 2 ? 0 : 1, field, fieldRegistration);
+        }
+
         return luaBuilder.toString();
     }
 

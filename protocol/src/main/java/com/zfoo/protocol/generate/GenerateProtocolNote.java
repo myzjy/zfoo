@@ -78,7 +78,39 @@ public abstract class GenerateProtocolNote {
         fieldNote = formatNote(language, fieldNote);
         return fieldNote;
     }
-
+    public static String fieldNote1(short protocolId, String fieldName, CodeLanguage language) {
+        var protocolNote = protocolNoteMap.get(protocolId);
+        var fieldNoteMap = protocolNote.getValue();
+        var fieldNote = fieldNoteMap.get(fieldName);
+        if (StringUtils.isBlank(fieldNote)) {
+            return StringUtils.EMPTY;
+        }
+        fieldNote = formatNote1(language, fieldNote);
+        return fieldNote;
+    }
+    private static String formatNote1(CodeLanguage language, String fieldNote) {
+        switch (language) {
+            case Cpp:
+            case Go:
+            case JavaScript:
+            case TypeScript:
+            case CSharp:
+            case Protobuf:
+                fieldNote = StringUtils.format("// {}", fieldNote).replace("\n", "\n// ");
+                break;
+            case Lua:
+                fieldNote = StringUtils.format("{}", fieldNote);
+                break;
+            case Python:
+            case GdScript:
+                fieldNote = StringUtils.format("# {}", fieldNote).replace("\n", "\n# ");
+                break;
+            case Enhance:
+            default:
+                throw new RunException("unrecognized enum type [{}]", language);
+        }
+        return fieldNote;
+    }
     private static String formatNote(CodeLanguage language, String fieldNote) {
         switch (language) {
             case Cpp:

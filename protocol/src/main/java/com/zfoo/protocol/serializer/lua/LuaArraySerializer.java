@@ -62,14 +62,28 @@ public class LuaArraySerializer implements ILuaSerializer {
     }
 
     @Override
-    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String protocolClazzName) {
-        GenerateProtocolFile.addTab(builder, deep);
+    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration, String protocolClazzName) {
+        GetTypeFiledName(builder, objectStr, field,protocolClazzName);
+    }
+
+    @Override
+    public void createReturnWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
         var typeName = field.getGenericType().getTypeName();
         var typeNameList = typeName.split("\\.");
         var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
-        builder.append(StringUtils.format("{}", objectStr)).append(LS);
+        builder.append(StringUtils.format("---@param {} {} {}", field.getName(), filedName, objectStr));
+        if (deep == 0) {
+            builder.append(LS);
+        }
+    }
+
+    static void GetTypeFiledName(StringBuilder builder, String objectStr, Field field,String protocolClazzName) {
+        var typeName = field.getGenericType().getTypeName();
+        var typeNameList = typeName.split("\\.");
+        var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
+        builder.append(StringUtils.format("--- {}", objectStr)).append(LS);
         builder.append(StringUtils.format("---@return {} {}", filedName, objectStr)).append(LS);
-        builder.append(StringUtils.format("function {}:get{}()", filedName, filedName)).append(LS);
+        builder.append(StringUtils.format("function {}:get{}()", protocolClazzName, filedName)).append(LS);
         builder.append(TAB);
         builder.append(StringUtils.format("return self.{}", field.getName())).append(LS);
         builder.append("end").append(LS);

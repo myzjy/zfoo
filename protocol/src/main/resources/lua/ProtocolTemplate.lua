@@ -4,6 +4,7 @@ function {}:ctor()
     {}
 end
 
+{}
 ---@return {}
 function {}:new({})
     {}
@@ -29,7 +30,7 @@ end
 
 ---@return {}
 function {}:read(data)
-    {}
+{}
     local packet = self:new(
             {})
     return packet

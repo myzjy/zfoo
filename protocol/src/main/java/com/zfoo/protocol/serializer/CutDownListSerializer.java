@@ -135,7 +135,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                         builder.append(StringUtils.format("buffer.writeIntArray({})", objectStr)).append(LS);
                         break;
                     case Lua:
-                        builder.append(StringUtils.format("buffer:writeIntArray({})", objectStr)).append(LS);
+                        builder.append(StringUtils.format("{}", objectStr)).append(LS);
                         break;
                     case CSharp:
                         builder.append(StringUtils.format("buffer.WriteIntList({});", objectStr)).append(LS);
@@ -162,7 +162,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                         builder.append(StringUtils.format("buffer.writeLongArray({})", objectStr)).append(LS);
                         break;
                     case Lua:
-                        builder.append(StringUtils.format("buffer:writeLongArray({})", objectStr)).append(LS);
+                        builder.append(StringUtils.format("{}", objectStr)).append(LS);
                         break;
                     case CSharp:
                         builder.append(StringUtils.format("buffer.WriteLongList({});", objectStr)).append(LS);
@@ -190,7 +190,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                         builder.append(StringUtils.format("buffer.writeFloatArray({})", objectStr)).append(LS);
                         break;
                     case Lua:
-                        builder.append(StringUtils.format("buffer:writeFloatArray({})", objectStr)).append(LS);
+                        builder.append(StringUtils.format("{}", objectStr)).append(LS);
                         break;
                     case CSharp:
                         builder.append(StringUtils.format("buffer.WriteFloatList({});", objectStr)).append(LS);
@@ -218,7 +218,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                         builder.append(StringUtils.format("buffer.writeDoubleArray({})", objectStr)).append(LS);
                         break;
                     case Lua:
-                        builder.append(StringUtils.format("buffer:writeDoubleArray({})", objectStr)).append(LS);
+                        builder.append(StringUtils.format("{}", objectStr)).append(LS);
                         break;
                     case CSharp:
                         builder.append(StringUtils.format("buffer.WriteDoubleList({});", objectStr)).append(LS);
@@ -246,7 +246,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                         builder.append(StringUtils.format("buffer.writeStringArray({})", objectStr)).append(LS);
                         break;
                     case Lua:
-                        builder.append(StringUtils.format("buffer:writeStringArray({})", objectStr)).append(LS);
+                        builder.append(StringUtils.format("{}", objectStr)).append(LS);
                         break;
                     case CSharp:
                         builder.append(StringUtils.format("buffer.WriteStringList({});", objectStr)).append(LS);
@@ -276,7 +276,7 @@ public class CutDownListSerializer implements ICutDownSerializer {
                             builder.append(StringUtils.format("buffer.writePacketArray({}, {})", objectStr, protocolId)).append(LS);
                             break;
                         case Lua:
-                            builder.append(StringUtils.format("{}", objectStr, protocolId)).append(LS);
+                            builder.append(StringUtils.format("{}", objectStr)).append(LS);
                             break;
                         case CSharp:
                             builder.append(StringUtils.format("buffer.WritePacketList({}, {});", objectStr, protocolId)).append(LS);

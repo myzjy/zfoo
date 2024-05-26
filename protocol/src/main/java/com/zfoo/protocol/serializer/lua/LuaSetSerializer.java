@@ -10,7 +10,6 @@
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and limitations under the License.
  */
-
 package com.zfoo.protocol.serializer.lua;
 
 import com.zfoo.protocol.generate.GenerateProtocolFile;
@@ -29,31 +28,26 @@ import static com.zfoo.protocol.util.StringUtils.TAB;
  * @author godotg
  */
 public class LuaSetSerializer implements ILuaSerializer {
-
     @Override
     public void writeObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
         GenerateProtocolFile.addTab(builder, deep);
         if (CutDownSetSerializer.getInstance().writeObject(builder, objectStr, field, fieldRegistration, CodeLanguage.Lua)) {
             return;
         }
-
         SetField setField = (SetField) fieldRegistration;
         builder.append(StringUtils.format("if {} == null then", objectStr)).append(LS);
         GenerateProtocolFile.addTab(builder, deep + 1);
         builder.append("buffer:writeInt(0)").append(LS);
         GenerateProtocolFile.addTab(builder, deep);
-
         builder.append("else").append(LS);
-
         GenerateProtocolFile.addTab(builder, deep + 1);
         builder.append(StringUtils.format("buffer:writeInt(#{})", objectStr)).append(LS);
-
         String index = "index" + GenerateProtocolFile.index.getAndIncrement();
         String element = "element" + GenerateProtocolFile.index.getAndIncrement();
         GenerateProtocolFile.addTab(builder, deep + 1);
         builder.append(StringUtils.format("for {}, {} in pairs({}) do", index, element, objectStr)).append(LS);
         GenerateLuaUtils.luaSerializer(setField.getSetElementRegistration().serializer())
-                .writeObject(builder, element, deep + 2, field, setField.getSetElementRegistration());
+                        .writeObject(builder, element, deep + 2, field, setField.getSetElementRegistration());
         GenerateProtocolFile.addTab(builder, deep + 1);
         builder.append("end").append(LS);
         GenerateProtocolFile.addTab(builder, deep);
@@ -61,7 +55,7 @@ public class LuaSetSerializer implements ILuaSerializer {
     }
 
     @Override
-    public void initWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String fieldNote) {
+    public void initWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration, String fieldNote) {
         GenerateProtocolFile.addTab(builder, deep);
         builder.append("---@type number").append(LS);
         builder.append(TAB.repeat(1));
@@ -72,50 +66,48 @@ public class LuaSetSerializer implements ILuaSerializer {
     public String listObjectString(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
         return "";
     }
+
     @Override
-    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration,String protocolClazzName) {
-        GenerateProtocolFile.addTab(builder, deep);
-        var typeName = field.getGenericType().getTypeName();
-        var typeNameList = typeName.split("\\.");
-        var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
-        builder.append(StringUtils.format("{}", objectStr)).append(LS);
-        builder.append(StringUtils.format("---@return {} {}", filedName, objectStr)).append(LS);
-        builder.append(StringUtils.format("function {}:get{}()", filedName, filedName)).append(LS);
-        builder.append(TAB);
-        builder.append(StringUtils.format("return self.{}", field.getName())).append(LS);
-        builder.append("end").append(LS);
+    public void createGetWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration, String protocolClazzName) {
+        LuaArraySerializer.GetTypeFiledName(builder, objectStr, field,protocolClazzName);
     }
+
     @Override
-    public String readObject(StringBuilder builder, int deep, Field field, IFieldRegistration fieldRegistration,String objectStr) {
+    public String readObject(StringBuilder builder, int deep, Field field, IFieldRegistration fieldRegistration, String objectStr) {
         GenerateProtocolFile.addTab(builder, deep);
         var cutDown = CutDownSetSerializer.getInstance().readObject(builder, field, fieldRegistration, CodeLanguage.Lua);
         if (cutDown != null) {
             return cutDown;
         }
-
         SetField setField = (SetField) fieldRegistration;
         String result = "result" + GenerateProtocolFile.index.getAndIncrement();
         builder.append(StringUtils.format("local {} = {}", result)).append(LS);
-
         GenerateProtocolFile.addTab(builder, deep);
         String size = "size" + GenerateProtocolFile.index.getAndIncrement();
         builder.append(StringUtils.format("local {} = buffer:readInt()", size)).append(LS);
-
         GenerateProtocolFile.addTab(builder, deep);
         builder.append(StringUtils.format("if {} > 0 then", size)).append(LS);
-
         GenerateProtocolFile.addTab(builder, deep + 1);
         String i = "index" + GenerateProtocolFile.index.getAndIncrement();
         builder.append(StringUtils.format("for {} = 1, {} do", i, size)).append(LS);
         String readObject = GenerateLuaUtils.luaSerializer(setField.getSetElementRegistration().serializer())
-                .readObject(builder, deep + 2, field, setField.getSetElementRegistration(),objectStr);
+                                            .readObject(builder, deep + 2, field, setField.getSetElementRegistration(), objectStr);
         GenerateProtocolFile.addTab(builder, deep + 2);
         builder.append(StringUtils.format("table.insert({}, {})", result, readObject)).append(LS);
         GenerateProtocolFile.addTab(builder, deep + 1);
         builder.append("end").append(LS);
         GenerateProtocolFile.addTab(builder, deep);
         builder.append("end").append(LS);
-
         return result;
+    }
+    @Override
+    public void createReturnWriterObject(StringBuilder builder, String objectStr, int deep, Field field, IFieldRegistration fieldRegistration) {
+        var typeName = field.getGenericType().getTypeName();
+        var typeNameList = typeName.split("\\.");
+        var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
+        builder.append(StringUtils.format("---@param {} {} {}", field.getName(), filedName, objectStr));
+        if (deep == 0) {
+            builder.append(LS);
+        }
     }
 }

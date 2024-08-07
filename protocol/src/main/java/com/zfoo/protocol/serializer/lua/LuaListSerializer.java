@@ -22,6 +22,7 @@ import com.zfoo.protocol.util.StringUtils;
 import java.lang.reflect.Field;
 
 import static com.zfoo.protocol.util.FileUtils.LS;
+import static com.zfoo.protocol.util.StringUtils.PERIOD;
 import static com.zfoo.protocol.util.StringUtils.TAB;
 
 /**
@@ -60,7 +61,13 @@ public class LuaListSerializer implements ILuaSerializer {
         var typeName = field.getGenericType().getTypeName();
         var typeNameList = typeName.split("\\.");
         var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
-        builder.append(StringUtils.format("---@type  table<number,{}>", filedName)).append(LS);
+        var className = switch (filedName) {
+            case "String" -> "string";
+            case "Boolean" -> "boolean";
+            case "Byte", "Short", "Integer", "Long", "Float", "Double" -> "number";
+            default -> filedName;
+        };
+        builder.append(StringUtils.format("---@type  table<number,{}>", className)).append(LS);
         builder.append(TAB.repeat(1));
         builder.append(StringUtils.format("self.{} = {}", objectStr)).append(LS);
     }
@@ -71,9 +78,14 @@ public class LuaListSerializer implements ILuaSerializer {
         var typeNameList = typeName.split("\\.");
         var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
         String result = Character.toUpperCase(field.getName().charAt(0)) + field.getName().substring(1);
-
         builder.append(StringUtils.format("--- {}", objectStr)).append(LS);
-        builder.append(StringUtils.format("---@type  table<number,{}> {}", filedName, objectStr)).append(LS);
+        var className = switch (filedName) {
+            case "String" -> "string";
+            case "Boolean" -> "boolean";
+            case "Byte", "Short", "Integer", "Long", "Float", "Double" -> "number";
+            default -> filedName;
+        };
+        builder.append(StringUtils.format("---@type  table<number,{}> {}", className, objectStr)).append(LS);
         builder.append(StringUtils.format("function {}:get{}()", protocolClazzName, result)).append(LS);
         builder.append(TAB);
         builder.append(StringUtils.format("return self.{}", field.getName())).append(LS);
@@ -85,14 +97,23 @@ public class LuaListSerializer implements ILuaSerializer {
         var typeName = field.getGenericType().getTypeName();
         var typeNameList = typeName.split("\\.");
         var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
+        var className = switch (filedName) {
+            case "String", "Byte", "Short", "Integer", "Long", "Float", "Double", "Boolean" -> true;
+            default -> false;
+        };
         builder.append(TAB);
         builder.append(StringUtils.format("local {} = {}", field.getName())).append(LS);
         builder.append(TAB);
         builder.append(StringUtils.format("for index, value in ipairs(data.{}) do", field.getName())).append(LS);
-        builder.append(TAB.repeat(2));
-        builder.append(StringUtils.format("local {}Packet = {}()", field.getName(), filedName)).append(LS);
-        builder.append(TAB.repeat(2));
-        builder.append(StringUtils.format("local packetData = {}Packet:read(value)", field.getName())).append(LS);
+        if (className) {
+            builder.append(TAB.repeat(2));
+            builder.append("local packetData = value").append(LS);
+        } else {
+            builder.append(TAB.repeat(2));
+            builder.append(StringUtils.format("local {}Packet = {}()", field.getName(), filedName)).append(LS);
+            builder.append(TAB.repeat(2));
+            builder.append(StringUtils.format("local packetData = {}Packet:read(value)", field.getName())).append(LS);
+        }
         builder.append(TAB.repeat(2));
         builder.append(StringUtils.format("table.insert({},packetData)", field.getName())).append(LS);
         builder.append(TAB);
@@ -113,7 +134,13 @@ public class LuaListSerializer implements ILuaSerializer {
         var typeName = field.getGenericType().getTypeName();
         var typeNameList = typeName.split("\\.");
         var filedName = StringUtils.replacePattern(typeNameList[typeNameList.length - 1], ">", "");
-        builder.append(StringUtils.format("---@param {} table<number,{}> {}", field.getName(), filedName, objectStr));
+        var className = switch (filedName) {
+            case "String" -> "string";
+            case "Boolean" -> "boolean";
+            case "Byte", "Short", "Integer", "Long", "Float", "Double" -> "number";
+            default -> filedName;
+        };
+        builder.append(StringUtils.format("---@param {} table<number,{}> {}", field.getName(), className, objectStr));
         if (deep == 0) {
             builder.append(LS);
         }

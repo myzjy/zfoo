@@ -12,6 +12,7 @@
 
 package com.zfoo.net.router.attachment;
 
+import com.baidu.bjf.remoting.protobuf.annotation.Protobuf;
 import com.zfoo.net.session.Session;
 import com.zfoo.protocol.anno.Protocol;
 
@@ -24,6 +25,7 @@ public class GatewayAttachment {
     /**
      * session id
      */
+    @Protobuf(order = 1)
     private long sid;
 
     /**
@@ -32,17 +34,20 @@ public class GatewayAttachment {
      * <p>
      * CN:用戶Id，从网关转发到后面的消息必须要附带用户的Id信息，要不然无法知道是哪个用户发过来的，0代表没有用户id
      */
+    @Protobuf(order = 2)
     private long uid;
 
     /**
      * EN:Used to determine which thread the message is processed on
      * CN:用来确定这条消息在哪一个线程处理
      */
+    @Protobuf(order = 3)
     private int taskExecutorHash;
 
     /**
      * true for the client, false for the server
      */
+    @Protobuf(order = 4)
     private boolean client;
 
 
@@ -50,6 +55,7 @@ public class GatewayAttachment {
      * EN:The client may send an packet with synchronous or asynchronous to the gateway, and the gateway needs to bring this attachment when forwarding
      * CN:客户端发到网关的可能是一个带有同步或者异步的附加包，网关转发的时候需要把这个附加包给带上
      */
+    @Protobuf(order = 5)
     private SignalAttachment signalAttachment;
 
 

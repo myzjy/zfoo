@@ -211,11 +211,11 @@ public abstract class GenerateProtobufUtils {
 
             var protobuf = field.getDeclaredAnnotation(Protobuf.class);
             if (protobuf == null) {
-                throw new RunException("protobuf协议类必须加上注解[{}]，并且标识order的顺序", Protobuf.class.getSimpleName());
+                throw new RunException("protobuf协议类必须加上注解[{}]，并且标识order的顺序,[{}],[Class:{}]", Protobuf.class.getSimpleName(), field.getName(), protocolId);
             }
             var order = protobuf.order();
             if (orderMap.containsKey(order)) {
-                throw new RunException("protobuf协议类注解[{}]，order的顺序重复[{}]", Protobuf.class.getSimpleName(), order);
+                throw new RunException("protobuf协议类注解[{}]，order的顺序重复[{}],[{}]", Protobuf.class.getSimpleName(), order, field.getName());
             }
             var builder = new StringBuilder();
             var fieldName = field.getName();

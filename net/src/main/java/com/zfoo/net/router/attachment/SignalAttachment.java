@@ -12,6 +12,8 @@
 
 package com.zfoo.net.router.attachment;
 
+import com.baidu.bjf.remoting.protobuf.annotation.Protobuf;
+import com.baidu.bjf.remoting.protobuf.annotation.ProtobufClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.zfoo.protocol.anno.Note;
@@ -25,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author godotg
  */
 @Protocol(id = 0)
+@ProtobufClass
 @JsonIgnoreProperties("responseFuture")
 public class SignalAttachment {
 
@@ -45,20 +48,24 @@ public class SignalAttachment {
      * EN:Unique identification of a packet, unique representation of an attachment, hashcode() and equals() equals signalId value
      * CN:唯一标识一个packet， 唯一表示一个Attachment，hashcode() and equals() 等于signalId
      */
+    @Protobuf(order = 1)
     private int signalId = ATOMIC_ID.incrementAndGet();
 
     /**
      * EN:The parameter used to calculate the hash in TaskBus to determine which thread the task is executed on
      * CN:用来在TaskBus中计算hash的参数，用来决定任务在哪一条线程执行
      */
+    @Protobuf(order = 2)
     private int taskExecutorHash = -1;
 
     @Note("0 for the server, 1 or 2 for the sync or async native client, 12 for the outside client such as browser, mobile")
+    @Protobuf(order = 3)
     private byte client = SIGNAL_NATIVE_ARGUMENT_CLIENT;
 
     /**
      * The timestamp the client sent it
      */
+    @Protobuf(order = 4)
     private long timestamp = TimeUtils.now();
 
     /**

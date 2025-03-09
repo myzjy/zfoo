@@ -13,6 +13,7 @@
 
 package com.zfoo.net.packet.common;
 
+import com.baidu.bjf.remoting.protobuf.annotation.Protobuf;
 import com.baidu.bjf.remoting.protobuf.annotation.ProtobufClass;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.anno.Protocol;
@@ -26,13 +27,16 @@ import com.zfoo.protocol.anno.Protocol;
 @Protocol(id = 100)
 public class Message {
 
+    @Protobuf(order = 1)
     private byte module;
 
     /**
      * 1是成功，其它的均视为失败的请求
      */
+    @Protobuf(order = 2)
     private int code;
 
+    @Protobuf(order = 3)
     private String message;
 
     public boolean success() {

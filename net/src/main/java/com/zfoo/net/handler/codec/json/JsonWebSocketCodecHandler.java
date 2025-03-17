@@ -13,17 +13,22 @@
 
 package com.zfoo.net.handler.codec.json;
 
+import com.baidu.bjf.remoting.protobuf.ProtobufProxy;
 import com.zfoo.net.packet.DecodedPacketInfo;
 import com.zfoo.net.packet.EncodedPacketInfo;
+import com.zfoo.net.packet.PacketService;
 import com.zfoo.protocol.ProtocolManager;
 import com.zfoo.protocol.buffer.ByteBufUtils;
+import com.zfoo.protocol.util.IOUtils;
 import com.zfoo.protocol.util.JsonUtils;
 import com.zfoo.protocol.util.StringUtils;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -32,7 +37,15 @@ import java.util.List;
 public class JsonWebSocketCodecHandler extends MessageToMessageCodec<WebSocketFrame, EncodedPacketInfo> {
 
     @Override
-    protected void decode(ChannelHandlerContext channelHandlerContext, WebSocketFrame webSocketFrame, List<Object> list) {
+    protected void decode(ChannelHandlerContext channelHandlerContext, WebSocketFrame webSocketFrame, List<Object> list) throws IOException {
+//        var byteBuf = webSocketFrame.content();
+//
+//        byteBuf.markReaderIndex();
+//        var length = byteBuf.readInt();
+//        var bytes = ByteBufUtils.readAllBytes(byteBuf);
+//        var jsonStr = StringUtils.bytesToString(bytes);
+//        var packetInfo = read(byteBuf);
+//        list.add(packetInfo);
         var byteBuf = webSocketFrame.content();
         var bytes = ByteBufUtils.readAllBytes(byteBuf);
         var jsonStr = StringUtils.bytesToString(bytes);
@@ -67,5 +80,21 @@ public class JsonWebSocketCodecHandler extends MessageToMessageCodec<WebSocketFr
 
         list.add(new BinaryWebSocketFrame(byteBuf));
     }
+
+//    public static DecodedPacketInfo read(ByteBuf buffer) throws IOException {
+//        var protocolId = ByteBufUtils.readShort(buffer);
+//        var protocolRegistration = ProtocolManager.getProtocol(protocolId);
+//        var protocolClass = protocolRegistration.protocolConstructor().getDeclaringClass();
+//        var hasAttachment = ByteBufUtils.tryReadBoolean(buffer);
+//        // 解析包的附加包
+//        var attachment = hasAttachment ? (ProtocolManager.read(buffer)) : null;
+//
+//        var protobufCodec = ProtobufProxy.create(protocolClass);
+//
+//        var bytes = ByteBufUtils.readAllBytes(buffer);
+//        var packet = protobufCodec.decode(bytes);
+//
+//        return DecodedPacketInfo.valueOf(packet, attachment);
+//    }
 
 }
